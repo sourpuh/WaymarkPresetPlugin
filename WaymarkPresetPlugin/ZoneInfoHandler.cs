@@ -2,210 +2,173 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-
-using Dalamud.Data;
-using Dalamud.Utility;
-
-using Lumina.Excel;
 using Lumina.Excel.GeneratedSheets;
 
 namespace WaymarkPresetPlugin
 {
-	public static class ZoneInfoHandler
-	{
-		public static void Init( DataManager dataManager )
-		{
-			//	Get the game sheets that we need to populate a zone dictionary.
-			ExcelSheet<Lumina.Excel.GeneratedSheets.TerritoryType> territorySheet = dataManager.GetExcelSheet<Lumina.Excel.GeneratedSheets.TerritoryType>();
-			ExcelSheet<Lumina.Excel.GeneratedSheets.ContentFinderCondition> contentFinderSheet = dataManager.GetExcelSheet<Lumina.Excel.GeneratedSheets.ContentFinderCondition>();
-			ExcelSheet<Lumina.Excel.GeneratedSheets.Map> mapSheet = dataManager.GetExcelSheet<Lumina.Excel.GeneratedSheets.Map>();
+    public static class ZoneInfoHandler
+    {
+        private static readonly Dictionary<ushort, ZoneInfo> ZoneInfoDict = new();
+        private static readonly Dictionary<uint, ushort> TerritoryTypeIDToContentFinderIDDict = new();
+        private static readonly Dictionary<string, List<MapInfo>> MapInfoDict = new();
 
-			//	Clean out anything that we had before.
-			mZoneInfoDict.Clear();
-			mTerritoryTypeIDToContentFinderIDDict.Clear();
+        //	This is to hard-code that some zones should be included, even if they don't otherwise meet the criteria.  There are a small handful of
+        //	ContentFinderCondition IDs that support waymark presets, but are content link type #3, and don't otherwise distinguish themselves in the
+        //	sheets in any way that I have found.  There is a separate function that gets called at runtime that determines whether presets are allowed
+        //	based on some flag about the current duty, but it doesn't seem to have something in the sheets that corresponds to it perfectly.
+        private static readonly List<ushort> BodgeIncludeContentFinderConditionIDs = new()
+        {
+            760, // Delubrum Reginae
+            761 // Delubrum Reginae (Savage)
+        };
 
-			//	Populate the zero entries ahead of time since there may be a many to one relationship with some zero IDs.
-			mZoneInfoDict[0] = ZoneInfo.Unknown;
-			mTerritoryTypeIDToContentFinderIDDict[0] = 0;
+        public static void Init()
+        {
+            //	Get the game sheets that we need to populate a zone dictionary.
+            var territorySheet = Plugin.Data.GetExcelSheet<TerritoryType>()!;
+            var contentFinderSheet = Plugin.Data.GetExcelSheet<ContentFinderCondition>()!;
+            var mapSheet = Plugin.Data.GetExcelSheet<Map>()!;
 
-			//	Get the name for every "MapID" that is an instance zone.  This is spread out over a few different sheets.  The ID number that gets used in the actual preset is the column 10 in
-			//	TerritoryType.  The zone name is correlated in PlaceName, and the duty name and ContentLink IDs are in ContentFinderCondition.  We are using the Content link because that's what's
-			//	returned by the best (working) function that I have been able to find so far for the current instance zone.  Confusingly, as scope has changed a bit, we want to store the actual
-			//	ID of the maps for these zones too.  The best solution (for the time being) seems to be to store a pseudo map name string (the base of the map names for that zone) that can be cross-referenced later.
-			foreach( TerritoryType zone in territorySheet.ToList() )
-			{
-				if( !mZoneInfoDict.ContainsKey( (UInt16)zone.ContentFinderCondition.Row ) && (
-						zone.ExclusiveType == 2 ||
-						mBodgeIncludeContentFinderConditionIDs.Contains( (UInt16)zone.ContentFinderCondition.Row )
-					) )
-				{
-					ContentFinderCondition contentRow = contentFinderSheet.GetRow( (UInt16)zone.ContentFinderCondition.Row );
-					if(	contentRow != null && (
-							( contentRow.ContentLinkType > 0 && contentRow.ContentLinkType < 3 ) ||
-							mBodgeIncludeContentFinderConditionIDs.Contains( (UInt16)zone.ContentFinderCondition.Row )
-						) )
-					{
-						if( !mZoneInfoDict.ContainsKey( (UInt16)zone.ContentFinderCondition.Row ) )
-						{
-							string dutyName = contentRow.Name.ToDalamudString().ToString().Trim();
-							if( dutyName.Length > 0 )
-							{
-								dutyName = dutyName.First().ToString().ToUpper() + dutyName[1..];
-							}
-							mZoneInfoDict.Add( (UInt16)zone.ContentFinderCondition.Row, new ZoneInfo( dutyName, zone.PlaceName.Value.Name.ToDalamudString().ToString(), zone.RowId, zone.Map.Value.Id.ToString().Split( '/' )[0], (UInt16)zone.ContentFinderCondition.Row, contentRow.Content ) );
-						}
-						if( !mTerritoryTypeIDToContentFinderIDDict.ContainsKey( zone.RowId ) )
-						{
-							mTerritoryTypeIDToContentFinderIDDict.Add( zone.RowId, (UInt16)zone.ContentFinderCondition.Row );
-						}
-					}
-				}
-			}
+            //	Clean out anything that we had before.
+            ZoneInfoDict.Clear();
+            TerritoryTypeIDToContentFinderIDDict.Clear();
 
-			//	Now get all of the map info for each territory.  We're doing it this way rather than solely taking the map column
-			//	from the TerritoryType sheet because it's easier to handle when a territory has multiple maps this way, rather than
-			//	testing each map name for something other than a "/00" and then incrementing until we find where the maps stop existing.
-			foreach( Map map in mapSheet.ToList() )
-			{
-				string mapZoneKey = map.Id.ToString().Split( '/' )[0];
+            //	Populate the zero entries ahead of time since there may be a many to one relationship with some zero IDs.
+            ZoneInfoDict[0] = ZoneInfo.Unknown;
+            TerritoryTypeIDToContentFinderIDDict[0] = 0;
 
-				if( !mMapInfoDict.ContainsKey( mapZoneKey ) )
-				{
-					mMapInfoDict.Add( mapZoneKey, new List<MapInfo>() );
-				}
+            //	Get the name for every "MapID" that is an instance zone.  This is spread out over a few different sheets.  The ID number that gets used in the actual preset is the column 10 in
+            //	TerritoryType.  The zone name is correlated in PlaceName, and the duty name and ContentLink IDs are in ContentFinderCondition.  We are using the Content link because that's what's
+            //	returned by the best (working) function that I have been able to find so far for the current instance zone.  Confusingly, as scope has changed a bit, we want to store the actual
+            //	ID of the maps for these zones too.  The best solution (for the time being) seems to be to store a pseudo map name string (the base of the map names for that zone) that can be cross-referenced later.
+            foreach (var zone in territorySheet)
+            {
+                if (ZoneInfoDict.ContainsKey((ushort) zone.ContentFinderCondition.Row) || (zone.ExclusiveType != 2 && !BodgeIncludeContentFinderConditionIDs.Contains((ushort)zone.ContentFinderCondition.Row)))
+                    continue;
 
-				mMapInfoDict[mapZoneKey].Add( new MapInfo( map.Id, map.SizeFactor, map.OffsetX, map.OffsetY, map.PlaceNameSub.Value.Name ) );
-			}
-		}
+                var contentRow = contentFinderSheet.GetRow(zone.ContentFinderCondition.Row);
+                if (contentRow == null || (contentRow.ContentLinkType is <= 0 or >= 3 && !BodgeIncludeContentFinderConditionIDs.Contains((ushort) zone.ContentFinderCondition.Row)))
+                    continue;
 
-		public static bool IsKnownContentFinderID( UInt16 ID )
-		{
-			return ID != 0 && mZoneInfoDict.ContainsKey( ID );
-		}
+                if (!ZoneInfoDict.ContainsKey((ushort) zone.ContentFinderCondition.Row))
+                {
+                    var dutyName = Utils.ToStr(contentRow.Name).Trim();
+                    if (dutyName.Length > 0)
+                        dutyName = dutyName.First().ToString().ToUpper() + dutyName[1..];
 
-		public static ZoneInfo GetZoneInfoFromContentFinderID( UInt16 ID )
-		{
-			if( mZoneInfoDict.ContainsKey( ID ) )
-			{
-				return mZoneInfoDict[ID];
-			}
-			else
-			{
-				return mZoneInfoDict[0];
-			}
-		}
+                    ZoneInfoDict.Add(
+                        (ushort) zone.ContentFinderCondition.Row,
+                        new ZoneInfo(dutyName, Utils.ToStr(zone.PlaceName.Value!.Name), zone.RowId, zone.Map.Value!.Id.ToString().Split('/')[0], (ushort) zone.ContentFinderCondition.Row, contentRow.Content));
+                }
 
-		public static ZoneInfo GetZoneInfoFromTerritoryTypeID( uint ID )
-		{
-			UInt16 contentFinderID = GetContentFinderIDFromTerritoryTypeID( ID );
-			if( mZoneInfoDict.ContainsKey( contentFinderID ) )
-			{
-				return mZoneInfoDict[contentFinderID];
-			}
-			else
-			{
-				return mZoneInfoDict[0];
-			}
-		}
+                TerritoryTypeIDToContentFinderIDDict.TryAdd(zone.RowId, (ushort) zone.ContentFinderCondition.Row);
+            }
 
-		public static UInt16 GetContentFinderIDFromTerritoryTypeID( uint ID )
-		{
-			if( mTerritoryTypeIDToContentFinderIDDict.ContainsKey( ID ) )
-			{
-				return mTerritoryTypeIDToContentFinderIDDict[ID];
-			}
-			else
-			{
-				return mTerritoryTypeIDToContentFinderIDDict[0];
-			}
-		}
+            //	Now get all of the map info for each territory.  We're doing it this way rather than solely taking the map column
+            //	from the TerritoryType sheet because it's easier to handle when a territory has multiple maps this way, rather than
+            //	testing each map name for something other than a "/00" and then incrementing until we find where the maps stop existing.
+            foreach (var map in mapSheet)
+            {
+                var mapZoneKey = map.Id.ToString().Split('/')[0];
 
-		//*****TODO: Make this class enumerable instead of doing this, but that sounds like work...*****
-		public static Dictionary<UInt16, ZoneInfo> GetAllZoneInfo()
-		{
-			return mZoneInfoDict;
-		}
+                if (!MapInfoDict.ContainsKey(mapZoneKey))
+                    MapInfoDict.Add(mapZoneKey, new List<MapInfo>());
 
-		public static MapInfo[] GetMapInfoFromTerritoryTypeID( uint ID )
-		{
-			string mapBaseName = GetZoneInfoFromTerritoryTypeID( ID ).MapBaseName;
-			if( mMapInfoDict.ContainsKey( mapBaseName ) )
-			{
-				return mMapInfoDict[mapBaseName].ToArray();
-			}
-			else
-			{
-				return Array.Empty<MapInfo>();
-			}
-		}
+                MapInfoDict[mapZoneKey].Add(new MapInfo(map.Id, map.SizeFactor, map.OffsetX, map.OffsetY, map.PlaceNameSub.Value!.Name));
+            }
+        }
 
-		private static readonly Dictionary<UInt16, ZoneInfo> mZoneInfoDict = new();
-		private static readonly Dictionary<uint, UInt16> mTerritoryTypeIDToContentFinderIDDict = new();
-		private static readonly Dictionary<string, List<MapInfo>> mMapInfoDict = new();
+        public static bool IsKnownContentFinderID(ushort ID)
+        {
+            return ID != 0 && ZoneInfoDict.ContainsKey(ID);
+        }
 
-		//	This is to hard-code that some zones should be included, even if they don't otherwise meet the criteria.  There are a small handful of
-		//	ContentFinderCondition IDs that support waymark presets, but are content link type #3, and don't otherwise distinguish themselves in the
-		//	sheets in any way that I have found.  There is a separate function that gets called at runtime that determines whether presets are allowed
-		//	based on some flag about the current duty, but it doesn't seem to have something in the sheets that corresponds to it perfectly.
-		private static readonly List<UInt16> mBodgeIncludeContentFinderConditionIDs = new(){
-			760,	// Delubrum Reginae
-			761		// Delubrum Reginae (Savage)
-		};
-	}
+        public static ZoneInfo GetZoneInfoFromContentFinderID(ushort ID)
+        {
+            return ZoneInfoDict.TryGetValue(ID, out var value) ? value : ZoneInfoDict[0];
+        }
 
-	public struct ZoneInfo
-	{
-		public ZoneInfo( string dutyName, string zoneName, uint territoryTypeID, string mapBaseName, UInt16 contentFinderConditionID, uint contentLinkID )
-		{
-			DutyName = dutyName;
-			ZoneName = zoneName;
-			TerritoryTypeID = territoryTypeID;
-			MapBaseName = mapBaseName;
-			ContentFinderConditionID = contentFinderConditionID;
-			ContentLinkID = contentLinkID;
-		}
+        public static ZoneInfo GetZoneInfoFromTerritoryTypeID(uint ID)
+        {
+            var contentFinderID = GetContentFinderIDFromTerritoryTypeID(ID);
+            return ZoneInfoDict.TryGetValue(contentFinderID, out var id) ? id : ZoneInfoDict[0];
+        }
 
-		public static readonly ZoneInfo Unknown = new( "Unknown Duty", "Unknown Zone", 0, "default", 0, 0 );
+        public static UInt16 GetContentFinderIDFromTerritoryTypeID(uint ID)
+        {
+            return TerritoryTypeIDToContentFinderIDDict.TryGetValue(ID, out var id) ? id : TerritoryTypeIDToContentFinderIDDict[0];
+        }
 
-		public string ZoneName { get; set; }
-		public string DutyName { get; set; }
-		public uint TerritoryTypeID { get; set; }
-		public string MapBaseName { get; set; }
-		public UInt16 ContentFinderConditionID { get; set; }
-		public uint ContentLinkID { get; set; }
-	}
+        //*****TODO: Make this class enumerable instead of doing this, but that sounds like work...*****
+        public static Dictionary<UInt16, ZoneInfo> GetAllZoneInfo()
+        {
+            return ZoneInfoDict;
+        }
 
-	public struct MapInfo
-	{
-		public MapInfo( string mapID, UInt16 sizeFactor, Int16 offsetX, Int16 offsetY, string placeNameSub )
-		{
-			MapID = mapID;
-			SizeFactor = sizeFactor;
-			Offset = new Vector2( offsetX, offsetY );
-			PlaceNameSub = placeNameSub;
-		}
+        public static MapInfo[] GetMapInfoFromTerritoryTypeID(uint ID)
+        {
+            var mapBaseName = GetZoneInfoFromTerritoryTypeID(ID).MapBaseName;
+            return MapInfoDict.TryGetValue(mapBaseName, out var value) ? value.ToArray() : Array.Empty<MapInfo>();
+        }
+    }
 
-		public static readonly MapInfo Unknown = new( "default/00", 100, 0, 0, "" );
+    public struct ZoneInfo
+    {
+        public string ZoneName { get; set; }
+        public string DutyName { get; set; }
+        public uint TerritoryTypeID { get; set; }
+        public string MapBaseName { get; set; }
+        public UInt16 ContentFinderConditionID { get; set; }
+        public uint ContentLinkID { get; set; }
 
-		public string MapID { get; set; }
-		public UInt16 SizeFactor { get; set; }
-		public Vector2 Offset { get; set; }
-		public string PlaceNameSub { get; set; }
-		public string GetMapFilePath( bool smallMap = false )
-		{
-			return $"ui/map/{MapID}/{MapID.Replace( "/", "" )}_{(smallMap ? "s" : "m")}.tex";
-		}
-		public string GetMapParchmentImageFilePath( bool smallMap = false )
-		{
-			return $"ui/map/{MapID}/{MapID.Replace( "/", "" )}m_{( smallMap ? "s" : "m" )}.tex";
-		}
-		public Vector2 GetMapCoordinates( Vector2 pixelCoordinates )
-		{
-			return ( pixelCoordinates - new Vector2( 1024f ) ) / (float)SizeFactor * 100f - Offset;
-		}
-		public Vector2 GetPixelCoordinates( Vector2 mapCoordinates )
-		{
-			return ( mapCoordinates + Offset ) / 100f * (float)SizeFactor + new Vector2( 1024f );
-		}
-	}
+        public ZoneInfo(string dutyName, string zoneName, uint territoryTypeID, string mapBaseName, ushort contentFinderConditionID, uint contentLinkID)
+        {
+            DutyName = dutyName;
+            ZoneName = zoneName;
+            TerritoryTypeID = territoryTypeID;
+            MapBaseName = mapBaseName;
+            ContentFinderConditionID = contentFinderConditionID;
+            ContentLinkID = contentLinkID;
+        }
+
+        public static readonly ZoneInfo Unknown = new("Unknown Duty", "Unknown Zone", 0, "default", 0, 0);
+    }
+
+    public struct MapInfo
+    {
+        public string MapID { get; set; }
+        public ushort SizeFactor { get; set; }
+        public Vector2 Offset { get; set; }
+        public string PlaceNameSub { get; set; }
+
+        public MapInfo(string mapID, ushort sizeFactor, short offsetX, short offsetY, string placeNameSub)
+        {
+            MapID = mapID;
+            SizeFactor = sizeFactor;
+            Offset = new Vector2(offsetX, offsetY);
+            PlaceNameSub = placeNameSub;
+        }
+
+        public static readonly MapInfo Unknown = new("default/00", 100, 0, 0, "");
+
+        public string GetMapFilePath(bool smallMap = false)
+        {
+            return $"ui/map/{MapID}/{MapID.Replace("/", "")}_{(smallMap ? "s" : "m")}.tex";
+        }
+
+        public string GetMapParchmentImageFilePath(bool smallMap = false)
+        {
+            return $"ui/map/{MapID}/{MapID.Replace("/", "")}m_{(smallMap ? "s" : "m")}.tex";
+        }
+
+        public Vector2 GetMapCoordinates(Vector2 pixelCoordinates)
+        {
+            return (pixelCoordinates - new Vector2(1024f)) / SizeFactor * 100f - Offset;
+        }
+
+        public Vector2 GetPixelCoordinates(Vector2 mapCoordinates)
+        {
+            return (mapCoordinates + Offset) / 100f * SizeFactor + new Vector2(1024f);
+        }
+    }
 }

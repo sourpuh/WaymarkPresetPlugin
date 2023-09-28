@@ -5,9 +5,9 @@ namespace WaymarkPresetPlugin
 {
 	internal class ZoneSortComparer_Basic : IComparer<UInt16>
 	{
-		public int Compare( UInt16 a, UInt16 b )
+		public int Compare(UInt16 a, UInt16 b)
 		{
-			int compareResult = a.CompareTo( b );
+			int compareResult = a.CompareTo(b);
 			return SortDescending ? -compareResult : compareResult;
 		}
 

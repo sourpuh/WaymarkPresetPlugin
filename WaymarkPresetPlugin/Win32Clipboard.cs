@@ -6,7 +6,7 @@ namespace WaymarkPresetPlugin
 {
 	//	The C# clipboard options require loading in WinForms or WPF dependencies, and that brings along unwanted baggage (i.e., suddenly you have to worry about DPI scaling issues).
 	//	The ImGui log to clipboard functionality seems to be hard-capped at 256 characters, and if it encounters an unintentional C string formatting sequence, that causes issues too.
-	//	So we probably have to interact with the OS clipboard ourselves.  This is just enough of an implementation to do what we need.
+	//	So we probably have to interact with the OS clipboard ourselves. This is just enough of an implementation to do what we need.
 	public static class Win32Clipboard
 	{
 		public static void CopyTextToClipboard( string str )

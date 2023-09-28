@@ -24,14 +24,13 @@ namespace WaymarkPresetPlugin
 		protected void RebuildFoundZonesList()
 		{
 			FoundZones.Clear();
-			foreach( var zone in ZoneInfoHandler.GetAllZoneInfo() )
+			foreach(var zone in ZoneInfoHandler.GetAllZoneInfo())
 			{
-				if( !FoundZones.Contains( zone.Key ) &&
-					(	LastSearchString.Length < 1 ||
-						zone.Value.DutyName.ToLower().Contains( LastSearchString ) ||
-						zone.Value.ZoneName.ToLower().Contains( LastSearchString ) ||
-						zone.Value.ContentFinderConditionID.ToString().Contains( LastSearchString ) ||
-						zone.Value.TerritoryTypeID.ToString().Contains( LastSearchString ) ) )
+				if (!FoundZones.Contains(zone.Key) && (LastSearchString.Length < 1 ||
+				                                        zone.Value.DutyName.ToLower().Contains(LastSearchString) ||
+				                                        zone.Value.ZoneName.ToLower().Contains(LastSearchString) ||
+				                                        zone.Value.ContentFinderConditionID.ToString().Contains(LastSearchString) ||
+				                                        zone.Value.TerritoryTypeID.ToString().Contains(LastSearchString)))
 				{
 					FoundZones.Add( zone.Key );
 				}

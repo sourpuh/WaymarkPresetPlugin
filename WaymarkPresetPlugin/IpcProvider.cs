@@ -1,158 +1,156 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-using Dalamud.Logging;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 
-namespace WaymarkPresetPlugin
+namespace WaymarkPresetPlugin;
+
+internal static class IpcProvider
 {
-	internal static class IpcProvider
-	{
-		public static void RegisterIPC( Plugin plugin, DalamudPluginInterface pluginInterface )
-		{
-			mPlugin = plugin;
+    private static Plugin Plugin;
 
-			mCallGate_GetPresetsForCurrentArea = pluginInterface.GetIpcProvider<SortedDictionary<int, string>>( $"{Plugin.InternalName}.GetPresetsForCurrentArea" );
-			mCallGate_GetPresetsForCurrentArea?.RegisterFunc( GetPresetsForCurrentArea );
+    private static ICallGateProvider<SortedDictionary<int, string>> CallGateGetPresetsForCurrentArea;
+    private static ICallGateProvider<uint, SortedDictionary<int, string>> CallGateGetPresetsForTerritoryType;
 
-			mCallGate_GetPresetsForTerritoryType = pluginInterface.GetIpcProvider<UInt32, SortedDictionary<int, string>>( $"{Plugin.InternalName}.GetPresetsForTerritoryType" );
-			mCallGate_GetPresetsForTerritoryType?.RegisterFunc( GetPresetsForTerritoryType );
+    private static ICallGateProvider<ushort, SortedDictionary<int, string>> CallGateGetPresetsForContentFinderCondition;
 
-			mCallGate_GetPresetsForContentFinderCondition = pluginInterface.GetIpcProvider<UInt16, SortedDictionary<int, string>>( $"{Plugin.InternalName}.GetPresetsForContentFinderCondition" );
-			mCallGate_GetPresetsForContentFinderCondition?.RegisterFunc( GetPresetsForContentFinderCondition );
+    private static ICallGateProvider<int, bool> CallGatePlacePresetByIndex;
+    private static ICallGateProvider<string, bool> CallGatePlacePresetByName;
+    private static ICallGateProvider<string, uint, bool> CallGatePlacePresetByNameAndTerritoryType;
+    private static ICallGateProvider<string, ushort, bool> CallGatePlacePresetByNameAndContentFinderCondition;
 
-			mCallGate_PlacePresetByIndex = pluginInterface.GetIpcProvider<int, bool>( $"{Plugin.InternalName}.PlacePresetByIndex" );
-			mCallGate_PlacePresetByIndex?.RegisterFunc( PlacePresetByIndex );
+    //	Just in case someone fucks up calling our placement IPC; I don't want someone else making me try to place waymarks 60 times a second and getting people banned.
+    private static DateTimeOffset TimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
+    private static readonly TimeSpan IPCPresetPlacementCooldown = new(0, 0, 3);
 
-			mCallGate_PlacePresetByName = pluginInterface.GetIpcProvider<string, bool>( $"{Plugin.InternalName}.PlacePresetByName" );
-			mCallGate_PlacePresetByName?.RegisterFunc( PlacePresetByName );
+    public static void RegisterIPC(Plugin plugin)
+    {
+        Plugin = plugin;
 
-			mCallGate_PlacePresetByNameAndTerritoryType = pluginInterface.GetIpcProvider<string, UInt32, bool>( $"{Plugin.InternalName}.PlacePresetByNameAndTerritoryType" );
-			mCallGate_PlacePresetByNameAndTerritoryType?.RegisterFunc( PlacePresetByNameAndTerritoryType );
+        CallGateGetPresetsForCurrentArea = Plugin.PluginInterface.GetIpcProvider<SortedDictionary<int, string>>($"{Plugin.InternalName}.GetPresetsForCurrentArea");
+        CallGateGetPresetsForCurrentArea?.RegisterFunc(GetPresetsForCurrentArea);
 
-			mCallGate_PlacePresetByNameAndContentFinderCondition = pluginInterface.GetIpcProvider<string, UInt16, bool>( $"{Plugin.InternalName}.PlacePresetByNameAndContentFinderCondition" );
-			mCallGate_PlacePresetByNameAndContentFinderCondition?.RegisterFunc( PlacePresetByNameAndContentFinderCondition );
-		}
+        CallGateGetPresetsForTerritoryType = Plugin.PluginInterface.GetIpcProvider<uint, SortedDictionary<int, string>>($"{Plugin.InternalName}.GetPresetsForTerritoryType");
+        CallGateGetPresetsForTerritoryType?.RegisterFunc(GetPresetsForTerritoryType);
 
-		public static void UnregisterIPC()
-		{
-			mCallGate_GetPresetsForCurrentArea?.UnregisterFunc();
-			mCallGate_GetPresetsForTerritoryType?.UnregisterFunc();
-			mCallGate_GetPresetsForContentFinderCondition?.UnregisterFunc();
-			mCallGate_PlacePresetByIndex?.UnregisterFunc();
-			mCallGate_PlacePresetByName?.UnregisterFunc();
-			mCallGate_PlacePresetByNameAndTerritoryType?.UnregisterFunc();
-			mCallGate_PlacePresetByNameAndContentFinderCondition?.UnregisterFunc();
+        CallGateGetPresetsForContentFinderCondition = Plugin.PluginInterface.GetIpcProvider<ushort, SortedDictionary<int, string>>($"{Plugin.InternalName}.GetPresetsForContentFinderCondition");
+        CallGateGetPresetsForContentFinderCondition?.RegisterFunc(GetPresetsForContentFinderCondition);
 
-			mCallGate_GetPresetsForCurrentArea = null;
-			mCallGate_GetPresetsForTerritoryType = null;
-			mCallGate_GetPresetsForContentFinderCondition = null;
-			mCallGate_PlacePresetByIndex = null;
-			mCallGate_PlacePresetByName = null;
-			mCallGate_PlacePresetByNameAndTerritoryType = null;
-			mCallGate_PlacePresetByNameAndContentFinderCondition = null;
+        CallGatePlacePresetByIndex = Plugin.PluginInterface.GetIpcProvider<int, bool>($"{Plugin.InternalName}.PlacePresetByIndex");
+        CallGatePlacePresetByIndex?.RegisterFunc(PlacePresetByIndex);
 
-			mPlugin = null;
-		}
+        CallGatePlacePresetByName = Plugin.PluginInterface.GetIpcProvider<string, bool>($"{Plugin.InternalName}.PlacePresetByName");
+        CallGatePlacePresetByName?.RegisterFunc(PlacePresetByName);
 
-		private static SortedDictionary<int, string> GetPresetsForCurrentArea()
-		{
-			if( mPlugin == null ) return new();
+        CallGatePlacePresetByNameAndTerritoryType = Plugin.PluginInterface.GetIpcProvider<string, uint, bool>($"{Plugin.InternalName}.PlacePresetByNameAndTerritoryType");
+        CallGatePlacePresetByNameAndTerritoryType?.RegisterFunc(PlacePresetByNameAndTerritoryType);
 
-			var presets = new SortedDictionary<int, string>();
-			var presetIndices = mPlugin.InternalCommand_GetPresetsForCurrentArea();
+        CallGatePlacePresetByNameAndContentFinderCondition = Plugin.PluginInterface.GetIpcProvider<string, ushort, bool>($"{Plugin.InternalName}.PlacePresetByNameAndContentFinderCondition");
+        CallGatePlacePresetByNameAndContentFinderCondition?.RegisterFunc(PlacePresetByNameAndContentFinderCondition);
+    }
 
-			foreach( var index in presetIndices )
-			{
-				presets.Add( index, mPlugin.GetLibraryPresetName( index ) );
-			}
+    public static void UnregisterIPC()
+    {
+        Plugin = null;
 
-			return presets;
-		}
+        CallGateGetPresetsForCurrentArea?.UnregisterFunc();
+        CallGateGetPresetsForTerritoryType?.UnregisterFunc();
+        CallGateGetPresetsForContentFinderCondition?.UnregisterFunc();
+        CallGatePlacePresetByIndex?.UnregisterFunc();
+        CallGatePlacePresetByName?.UnregisterFunc();
+        CallGatePlacePresetByNameAndTerritoryType?.UnregisterFunc();
+        CallGatePlacePresetByNameAndContentFinderCondition?.UnregisterFunc();
 
-		private static SortedDictionary<int, string> GetPresetsForTerritoryType( UInt32 territoryType )
-		{
-			if( mPlugin == null ) return new();
+        CallGateGetPresetsForCurrentArea = null;
+        CallGateGetPresetsForTerritoryType = null;
+        CallGateGetPresetsForContentFinderCondition = null;
+        CallGatePlacePresetByIndex = null;
+        CallGatePlacePresetByName = null;
+        CallGatePlacePresetByNameAndTerritoryType = null;
+        CallGatePlacePresetByNameAndContentFinderCondition = null;
+    }
 
-			var presets = new SortedDictionary<int, string>();
-			var presetIndices = mPlugin.InternalCommand_GetPresetsForTerritoryType( territoryType );
+    private static SortedDictionary<int, string> GetPresetsForCurrentArea()
+    {
+        var presets = new SortedDictionary<int, string>();
+        if (Plugin == null)
+            return presets;
 
-			foreach( var index in presetIndices )
-			{
-				presets.Add( index, mPlugin.GetLibraryPresetName( index ) );
-			}
+        foreach (var index in Plugin.InternalCommand_GetPresetsForCurrentArea())
+            presets.Add(index, Plugin.GetLibraryPresetName(index));
 
-			return presets;
-		}
+        return presets;
+    }
 
-		private static SortedDictionary<int, string> GetPresetsForContentFinderCondition( UInt16 contentFinderCondition )
-		{
-			if( mPlugin == null ) return new();
+    private static SortedDictionary<int, string> GetPresetsForTerritoryType(uint territoryType)
+    {
+        var presets = new SortedDictionary<int, string>();
+        if (Plugin == null)
+            return presets;
 
-			var presets = new SortedDictionary<int, string>();
-			var presetIndices = mPlugin.InternalCommand_GetPresetsForContentFinderCondition( contentFinderCondition );
+        foreach (var index in Plugin.InternalCommand_GetPresetsForTerritoryType(territoryType))
+            presets.Add(index, Plugin.GetLibraryPresetName(index));
 
-			foreach( var index in presetIndices )
-			{
-				presets.Add( index, mPlugin.GetLibraryPresetName( index ) );
-			}
+        return presets;
+    }
 
-			return presets;
-		}
+    private static SortedDictionary<int, string> GetPresetsForContentFinderCondition(ushort contentFinderCondition)
+    {
+        var presets = new SortedDictionary<int, string>();
+        if (Plugin == null)
+            return presets;
 
-		private static bool PlacePresetByIndex( int index )
-		{
-			PluginLog.LogInformation( $"IPC request received to place a preset.  Index: {index}" );
-			if( mPlugin == null ) return false;
-			if( DateTimeOffset.UtcNow - mTimeOfLastPresetPlacement < mIPCPresetPlacementCooldown ) return false;
-			else mTimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
-			return mPlugin.InternalCommand_PlacePresetByIndex( index );
-		}
+        foreach (var index in Plugin.InternalCommand_GetPresetsForContentFinderCondition(contentFinderCondition))
+            presets.Add(index, Plugin.GetLibraryPresetName(index));
 
-		private static bool PlacePresetByName( string presetName )
-		{
-			PluginLog.LogInformation( $"IPC request received to place a preset.  Preset Name: {presetName}" );
-			if( mPlugin == null ) return false;
-			if( DateTimeOffset.UtcNow - mTimeOfLastPresetPlacement < mIPCPresetPlacementCooldown ) return false;
-			else mTimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
-			return mPlugin.InternalCommand_PlacePresetByName( presetName );
-		}
+        return presets;
+    }
 
-		private static bool PlacePresetByNameAndTerritoryType( string presetName, UInt32 territoryType )
-		{
-			PluginLog.LogInformation( $"IPC request received to place a preset.  Preset Name: {presetName}, TerritoryType: {territoryType}" );
-			if( mPlugin == null ) return false;
-			if( DateTimeOffset.UtcNow - mTimeOfLastPresetPlacement < mIPCPresetPlacementCooldown ) return false;
-			else mTimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
-			return mPlugin.InternalCommand_PlacePresetByNameAndTerritoryType( presetName, territoryType );
-		}
+    private static bool PlacePresetByIndex(int index)
+    {
+        Plugin.Log.Information($"IPC request received to place a preset.  Index: {index}");
+        if (Plugin == null)
+            return false;
+        if (DateTimeOffset.UtcNow - TimeOfLastPresetPlacement < IPCPresetPlacementCooldown)
+            return false;
 
-		private static bool PlacePresetByNameAndContentFinderCondition( string presetName, UInt16 contentFinderCondition )
-		{
-			PluginLog.LogInformation( $"IPC request received to place a preset.  Preset Name: {presetName}, ContentFinderCondition: {contentFinderCondition}" );
-			if( mPlugin == null ) return false;
-			if( DateTimeOffset.UtcNow - mTimeOfLastPresetPlacement < mIPCPresetPlacementCooldown ) return false;
-			else mTimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
-			return mPlugin.InternalCommand_PlacePresetByNameAndContentFinderCondition( presetName, contentFinderCondition );
-		}
+        TimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
+        return Plugin.InternalCommand_PlacePresetByIndex(index);
+    }
 
-		private static ICallGateProvider<SortedDictionary<int, string>> mCallGate_GetPresetsForCurrentArea;
-		private static ICallGateProvider<UInt32, SortedDictionary<int, string>> mCallGate_GetPresetsForTerritoryType;
-		private static ICallGateProvider<UInt16, SortedDictionary<int, string>> mCallGate_GetPresetsForContentFinderCondition;
+    private static bool PlacePresetByName(string presetName)
+    {
+        Plugin.Log.Information($"IPC request received to place a preset.  Preset Name: {presetName}");
+        if (Plugin == null)
+            return false;
+        if (DateTimeOffset.UtcNow - TimeOfLastPresetPlacement < IPCPresetPlacementCooldown)
+            return false;
 
-		private static ICallGateProvider<int, bool> mCallGate_PlacePresetByIndex;
-		private static ICallGateProvider<string, bool> mCallGate_PlacePresetByName;
-		private static ICallGateProvider<string, UInt32, bool> mCallGate_PlacePresetByNameAndTerritoryType;
-		private static ICallGateProvider<string, UInt16, bool> mCallGate_PlacePresetByNameAndContentFinderCondition;
+        TimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
+        return Plugin.InternalCommand_PlacePresetByName(presetName);
+    }
 
-		//	Just in case someone fucks up calling our placement IPC; I don't want someone else making me try to place waymarks 60 times a second and getting people banned.
-		private static DateTimeOffset mTimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
-		private static readonly TimeSpan mIPCPresetPlacementCooldown = new( 0, 0, 3 );	
+    private static bool PlacePresetByNameAndTerritoryType(string presetName, uint territoryType)
+    {
+        Plugin.Log.Information($"IPC request received to place a preset.  Preset Name: {presetName}, TerritoryType: {territoryType}");
+        if (Plugin == null)
+            return false;
+        if (DateTimeOffset.UtcNow - TimeOfLastPresetPlacement < IPCPresetPlacementCooldown)
+            return false;
 
-		private static Plugin mPlugin;
-	}
+        TimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
+        return Plugin.InternalCommand_PlacePresetByNameAndTerritoryType(presetName, territoryType);
+    }
+
+    private static bool PlacePresetByNameAndContentFinderCondition(string presetName, ushort contentFinderCondition)
+    {
+        Plugin.Log.Information($"IPC request received to place a preset.  Preset Name: {presetName}, ContentFinderCondition: {contentFinderCondition}");
+        if (Plugin == null)
+            return false;
+        if (DateTimeOffset.UtcNow - TimeOfLastPresetPlacement < IPCPresetPlacementCooldown)
+            return false;
+
+        TimeOfLastPresetPlacement = DateTimeOffset.UtcNow;
+        return Plugin.InternalCommand_PlacePresetByNameAndContentFinderCondition(presetName, contentFinderCondition);
+    }
 }

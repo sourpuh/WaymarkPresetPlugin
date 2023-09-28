@@ -1,68 +1,65 @@
 ﻿using System;
 using System.Numerics;
-
 using CheapLoc;
 
-namespace WaymarkPresetPlugin
+namespace WaymarkPresetPlugin;
+
+public class Waymark : IEquatable<Waymark>
 {
-	public class Waymark : IEquatable<Waymark>
-	{
-		public Waymark()
-		{
-		}
+    public float X { get; set; } = 0.0f;
+    public float Y { get; set; } = 0.0f;
+    public float Z { get; set; } = 0.0f;
+    public int ID { get; set; } = 0; //This is kind of a BS field, but keep it for import/export interop with PP.
+    public bool Active { get; set; } = false;
 
-		public Waymark( Waymark objToCopy )
-		{
-			if( objToCopy != null )
-			{
-				X = objToCopy.X;
-				Y = objToCopy.Y;
-				Z = objToCopy.Z;
-				ID = objToCopy.ID;
-				Active = objToCopy.Active;
-			}
-		}
+    [NonSerialized] private const float MaxEqualCoordDifference = 0.01f;
 
-		public string GetWaymarkDataString()
-		{
-			return Active ? ( X.ToString( "0.00" ).PadLeft( 7 ) + ", " + Y.ToString( "0.00" ).PadLeft( 7 ) + ", " + Z.ToString( "0.00" ).PadLeft( 7 ) ) : Loc.Localize( "Waymark Status: Unused", "Unused" );
-		}
+    public Waymark() { }
 
-		public void SetCoords( Vector3 pos )
-		{
-			X = pos.X;
-			Y = pos.Y;
-			Z = pos.Z;
-		}
+    public Waymark(Waymark objToCopy)
+    {
+        if (objToCopy != null)
+        {
+            X = objToCopy.X;
+            Y = objToCopy.Y;
+            Z = objToCopy.Z;
+            ID = objToCopy.ID;
+            Active = objToCopy.Active;
+        }
+    }
 
-		public float X { get; set; } = 0.0f;
-		public float Y { get; set; } = 0.0f;
-		public float Z { get; set; } = 0.0f;
-		public int ID { get; set; } = 0;	//This is kind of a BS field, but keep it for import/export interop with PP.
-		public bool Active { get; set; } = false;
+    public string GetWaymarkDataString()
+    {
+        return Active ? $"{X,7:0.00}, {Y,7:0.00}, {Z,7:0.00}" : Loc.Localize("Waymark Status: Unused", "Unused");
+    }
 
-		#region IEquatable Implementation
-		public bool Equals( Waymark other )
-		{
-			return	Math.Abs( X - other.X ) <= mMaxEqualCoordDifference &&
-					Math.Abs( Y - other.Y ) <= mMaxEqualCoordDifference &&
-					Math.Abs( Z - other.Z ) <= mMaxEqualCoordDifference &&
-					Active == other.Active;
-		}
+    public void SetCoords(Vector3 pos)
+    {
+        X = pos.X;
+        Y = pos.Y;
+        Z = pos.Z;
+    }
 
-		public override bool Equals( Object other )
-		{
-			return other.GetType().Equals( GetType() ) &&
-					( (Waymark)other ).Equals( this );
-		}
+    #region IEquatable Implementation
 
-		public override int GetHashCode()
-		{
-			return ( X, Y, Z, Active ).GetHashCode();
-		}
+    public bool Equals(Waymark other)
+    {
+        return other != null &&
+               Math.Abs(X - other.X) <= MaxEqualCoordDifference &&
+               Math.Abs(Y - other.Y) <= MaxEqualCoordDifference &&
+               Math.Abs(Z - other.Z) <= MaxEqualCoordDifference &&
+               Active == other.Active;
+    }
 
-		[NonSerialized]
-		private static readonly float mMaxEqualCoordDifference = 0.01f;
-		#endregion
-	}
+    public override bool Equals(Object other)
+    {
+        return other != null && other.GetType() == GetType() && ((Waymark) other).Equals(this);
+    }
+
+    public override int GetHashCode()
+    {
+        return (X, Y, Z, Active).GetHashCode();
+    }
+
+    #endregion
 }

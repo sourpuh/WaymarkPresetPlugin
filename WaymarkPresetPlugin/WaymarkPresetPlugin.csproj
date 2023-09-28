@@ -2,10 +2,10 @@
 	<PropertyGroup>
 		<TargetFramework>net7.0-windows</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
-		<Version>1.4.7.0</Version>
-		<Authors>PunishedPineapple, abashby</Authors>
+		<Version>1.4.8.0</Version>
+		<Authors>Infi, PunishedPineapple</Authors>
 		<Product />
-		<Copyright>Copyright © PunishedPineapple 2020-2023</Copyright>
+		<Copyright>Copyright @Infi 2023- ©PunishedPineapple 2020-2023</Copyright>
 		<PackageProjectUrl>https://github.com/Infiziert90/WaymarkPresetPlugin</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/Infiziert90/WaymarkPresetPlugin</RepositoryUrl>
 	</PropertyGroup>
@@ -24,7 +24,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="DalamudPackager" Version="2.1.10" />
+		<PackageReference Include="DalamudPackager" Version="2.1.12" />
 	</ItemGroup>
 
 	<PropertyGroup>
