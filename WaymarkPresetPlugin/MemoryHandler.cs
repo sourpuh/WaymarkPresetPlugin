@@ -169,7 +169,6 @@ public static class MemoryHandler
 
 	public static void PlacePreset(GamePreset preset, bool allowClientSide = false)
 	{
-		Plugin.Log.Information("Try placement Outside");
 		if(allowClientSide && InOverworldZone())
 			PlacePreset_ClientSide(preset);
 		else
@@ -178,7 +177,6 @@ public static class MemoryHandler
 
 	private static void DirectPlacePreset(GamePreset preset)
 	{
-		Plugin.Log.Information("Direct Place");
 		if(IsSafeToDirectPlacePreset())
 		{
 			GamePreset_Placement placementStruct = new(preset);
@@ -246,7 +244,6 @@ public static class MemoryHandler
 
 	private static void PlacePreset_ClientSide(GamePreset preset)
 	{
-		Plugin.Log.Information("Try placement");
 		//	Check whether we shouldn't be doing this.
 		if(!IsSafeToClientPlace())
 			return;
