@@ -281,7 +281,7 @@ internal sealed class WindowHelp : IDisposable
         if (PluginUI.EditorWindow.EditingPreset)
         {
             if (ImGui.Button(copyIntoEditorButtonText + "###Copy these points into the editor button"))
-                for (int i = 0; i < points.Length && i < 8; ++i)
+                for (var i = 0; i < points.Length && i < 8; ++i)
                     PluginUI.EditorWindow.ScratchEditingPreset.SetWaymark(i, true, points[i]);
         }
         else

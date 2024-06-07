@@ -9,6 +9,7 @@ using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Newtonsoft.Json;
 
 namespace WaymarkPresetPlugin;
@@ -233,24 +234,16 @@ public class Plugin : IDalamudPlugin
     {
         if (args.Length == 1 && uint.TryParse(args, out var gameSlotToCopy) && gameSlotToCopy >= 1 && gameSlotToCopy <= MemoryHandler.MaxPresetSlotNum)
         {
-            if (MemoryHandler.FoundSavedPresetSigs())
+            try
             {
-                try
-                {
-                    var tempPreset = WaymarkPreset.Parse(MemoryHandler.ReadSlot(gameSlotToCopy));
-                    return Loc.Localize("Text Command Response: Slot Info - Success 1", "Slot {0} Contents:\r\n{1}")
-                            .Format(gameSlotToCopy, tempPreset.GetPresetDataString(Configuration.GetZoneNameDelegate, Configuration.ShowIDNumberNextToZoneNames));
-                }
-                catch (Exception e)
-                {
-                    Log.Error($"An unknown error occured while trying to read the game's waymark data:\r\n{e}");
-                    return Loc.Localize("Text Command Response: Slot Info - Error 1", "An unknown error occured while trying to read the game's waymark data.");
-                }
+                var tempPreset = WaymarkPreset.Parse(MemoryHandler.ReadSlot(gameSlotToCopy));
+                return Loc.Localize("Text Command Response: Slot Info - Success 1", "Slot {0} Contents:\r\n{1}")
+                        .Format(gameSlotToCopy, tempPreset.GetPresetDataString(Configuration.GetZoneNameDelegate, Configuration.ShowIDNumberNextToZoneNames));
             }
-            else
+            catch (Exception e)
             {
-                return Loc.Localize("Text Command Response: Slot Info - Error 2",
-                    "Unable to read game's waymark data.");
+                Log.Error($"An unknown error occured while trying to read the game's waymark data:\r\n{e}");
+                return Loc.Localize("Text Command Response: Slot Info - Error 1", "An unknown error occured while trying to read the game's waymark data.");
             }
         }
         else
@@ -294,9 +287,6 @@ public class Plugin : IDalamudPlugin
     {
         if (args.Length != 1 || !uint.TryParse(args, out var gameSlotToCopy) || gameSlotToCopy < 1 || gameSlotToCopy > MemoryHandler.MaxPresetSlotNum)
             return Loc.Localize("Text Command Response: Import - Error 3", "An invalid game slot number was provided: \"{0}\".").Format(args);
-
-        if (!MemoryHandler.FoundSavedPresetSigs())
-            return Loc.Localize("Text Command Response: Import - Error 2", "Unable to read game's waymark data.  This probably means that the plugin needs to be updated for a new version of FFXIV.");
 
         try
         {
@@ -370,7 +360,7 @@ public class Plugin : IDalamudPlugin
 
                 if (exportTargetIndex >= 1 && exportTargetIndex <= MemoryHandler.MaxPresetSlotNum)
                 {
-                    if (MemoryHandler.WriteSlot((uint)exportTargetIndex, presetToExport.GetAsGamePreset()))
+                    if (MemoryHandler.WriteSlot(exportTargetIndex, presetToExport.GetAsGamePreset()))
                         return Loc.Localize("Text Command Response: Export - Success 2", "Preset exported to game slot {0}.").Format(exportTargetIndex);
 
                     return Loc.Localize("Text Command Response: Export - Error 6", "Unable to write to game slot {0}!".Format(exportTargetIndex));
@@ -526,7 +516,7 @@ public class Plugin : IDalamudPlugin
 
             for (var i = 0; i < MemoryHandler.MaxPresetSlotNum; ++i)
             {
-                GamePreset gamePresetData = new();
+                FieldMarkerPreset gamePresetData = new();
 
                 if (i < presetsToAutoLoad.Count)
                 {
@@ -536,7 +526,7 @@ public class Plugin : IDalamudPlugin
 
                 try
                 {
-                    MemoryHandler.WriteSlot((uint)i + 1, gamePresetData);
+                    MemoryHandler.WriteSlot(i + 1, gamePresetData);
                 }
                 catch (Exception e)
                 {

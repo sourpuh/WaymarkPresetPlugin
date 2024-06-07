@@ -11,7 +11,7 @@ internal sealed class WindowInfoPane : IDisposable
 {
     private Vector2 WindowSize;
 
-    private uint GameSlotDropdownSelection = 1;
+    private int GameSlotDropdownSelection = 1;
 
     private readonly PluginUI PluginUI;
     private readonly Configuration Configuration;
@@ -47,7 +47,7 @@ internal sealed class WindowInfoPane : IDisposable
                 ImGui.SetNextItemWidth(comboWidth);
                 if (ImGui.BeginCombo("###CopyToGameSlotNumberDropdown", $"{GameSlotDropdownSelection}"))
                 {
-                    for (uint i = 1; i <= MemoryHandler.MaxPresetSlotNum; ++i)
+                    for (var i = 1; i <= MemoryHandler.MaxPresetSlotNum; ++i)
                         if (ImGui.Selectable($"{i}"))
                             GameSlotDropdownSelection = i;
 
@@ -186,7 +186,7 @@ internal sealed class WindowInfoPane : IDisposable
             ImGui.SetNextItemWidth(comboWidth);
             if (ImGui.BeginCombo("###CopyToGameSlotNumberDropdown", $"{GameSlotDropdownSelection}"))
             {
-                for (uint i = 1; i <= MemoryHandler.MaxPresetSlotNum; ++i)
+                for (var i = 1; i <= MemoryHandler.MaxPresetSlotNum; ++i)
                     if (ImGui.Selectable($"{i}")) GameSlotDropdownSelection = i;
 
                 ImGui.EndCombo();
@@ -240,7 +240,7 @@ internal sealed class WindowInfoPane : IDisposable
         ImGui.End();
     }
 
-    private void CopyPresetToGameSlot(WaymarkPreset preset, uint slot)
+    private void CopyPresetToGameSlot(WaymarkPreset preset, int slot)
     {
         if (ZoneInfoHandler.IsKnownContentFinderID(preset.MapID) && slot >= 1 && slot <= MemoryHandler.MaxPresetSlotNum)
         {

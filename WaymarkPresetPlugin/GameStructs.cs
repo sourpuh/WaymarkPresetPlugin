@@ -1,236 +1,9 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 
 namespace WaymarkPresetPlugin
 {
-    //	Ideally we'd be setting up these structures as a pseudo-union with both named fields and as arrays, but marshalling for
-    //	arrays is absolutely fucked, and you can't really do indexers for a lot of the nested structures here, so it seems that
-    //	we have to just do almost everything as only an explicit field I guess.
-
-    //	The representation of each actual waymark in-memory.  The floats are what is used to render the marker, and adjusting
-    //	them or the flag immediately changes the waymark.  The parallel int (x1000) values are used for saving a preset and
-    //	probably also for transmission to server when placing a waymark or preset.
-    [StructLayout(LayoutKind.Explicit, Size = 0x20)]
-    public struct GameWaymark
-    {
-        [FieldOffset(0x00)] public float X_Float;
-        [FieldOffset(0x04)] public float Y_Float;
-        [FieldOffset(0x08)] public float Z_Float;
-        //	Four bytes of padding here.
-
-        [FieldOffset(0x10)] public int X_Int;
-        [FieldOffset(0x14)] public int Y_Int;
-        [FieldOffset(0x18)] public int Z_Int;
-
-        [MarshalAs(UnmanagedType.Bool)] [FieldOffset(0x1C)]
-        public bool Active;
-
-        public GameWaymark(GamePresetPoint presetPoint, bool active, bool ignoreInts = false)
-        {
-            X_Float = presetPoint.X / 1000.0f;
-            Y_Float = presetPoint.Y / 1000.0f;
-            Z_Float = presetPoint.Z / 1000.0f;
-
-            X_Int = ignoreInts ? 0 : presetPoint.X;
-            Y_Int = ignoreInts ? 0 : presetPoint.Y;
-            Z_Int = ignoreInts ? 0 : presetPoint.Z;
-
-            Active = active;
-        }
-
-        public override string ToString()
-        {
-            return $" {Active} | {X_Float}, {Y_Float}, {Z_Float} | {X_Int}, {Y_Int}, {Z_Int}";
-        }
-    }
-
-    //	The representation of all eight waymarks in memory.  Just a sequential array of the above struct.  This is only
-    //	a subset of the entire Field Markers object (See WaymarkInfo.txt for more information on object layout and behavior).
-    [StructLayout(LayoutKind.Sequential, Pack = 0, Size = 0x100)]
-    public struct GameWaymarks
-    {
-        public GameWaymark A;
-        public GameWaymark B;
-        public GameWaymark C;
-        public GameWaymark D;
-        public GameWaymark One;
-        public GameWaymark Two;
-        public GameWaymark Three;
-        public GameWaymark Four;
-
-        public GameWaymarks(GamePreset preset)
-        {
-            A = new GameWaymark(preset.A, preset.ActiveMarkers[0]);
-            B = new GameWaymark(preset.B, preset.ActiveMarkers[1]);
-            C = new GameWaymark(preset.C, preset.ActiveMarkers[2]);
-            D = new GameWaymark(preset.D, preset.ActiveMarkers[3]);
-            One = new GameWaymark(preset.One, preset.ActiveMarkers[4]);
-            Two = new GameWaymark(preset.Two, preset.ActiveMarkers[5]);
-            Three = new GameWaymark(preset.Three, preset.ActiveMarkers[6]);
-            Four = new GameWaymark(preset.Four, preset.ActiveMarkers[7]);
-        }
-
-        public override string ToString()
-        {
-            return $"A: {A}\r\n" +
-                   $"B: {B}\r\n" +
-                   $"C: {C}\r\n" +
-                   $"D: {D}\r\n" +
-                   $"1: {One}\r\n" +
-                   $"2: {Two}\r\n" +
-                   $"3: {Three}\r\n" +
-                   $"4: {Four}";
-        }
-    }
-
-    //	Helper structure used to manage individual waymark coordinates as they appear in a preset stored by the game.
-    [StructLayout(LayoutKind.Sequential, Pack = 0, Size = 12)]
-    public struct GamePresetPoint
-    {
-        public int X;
-        public int Y;
-        public int Z;
-
-        public GamePresetPoint(GameWaymark waymark, bool useClientVals = true)
-        {
-            if (useClientVals)
-            {
-                X = (int)(waymark.X_Float * 1000.0f);
-                Y = (int)(waymark.Y_Float * 1000.0f);
-                Z = (int)(waymark.Z_Float * 1000.0f);
-            }
-            else
-            {
-                X = waymark.X_Int;
-                Y = waymark.Y_Int;
-                Z = waymark.Z_Int;
-            }
-        }
-
-        public override string ToString()
-        {
-            return $"{X}, {Y}, {Z}";
-        }
-    }
-
-    //	The representation of a waymark preset in the game memory and on-disk.
-    [StructLayout(LayoutKind.Sequential, Pack = 0, Size = 104)]
-    public struct GamePreset
-    {
-        public GamePresetPoint A;
-        public GamePresetPoint B;
-        public GamePresetPoint C;
-        public GamePresetPoint D;
-        public GamePresetPoint One;
-        public GamePresetPoint Two;
-        public GamePresetPoint Three;
-        public GamePresetPoint Four;
-        public BitField8 ActiveMarkers;
-        private readonly byte _reserved;
-        public UInt16 ContentFinderConditionID;
-        public Int32 UnixTime;
-
-        public GamePreset(GameWaymarks waymarks)
-        {
-            A = new GamePresetPoint(waymarks.A);
-            B = new GamePresetPoint(waymarks.B);
-            C = new GamePresetPoint(waymarks.C);
-            D = new GamePresetPoint(waymarks.D);
-            One = new GamePresetPoint(waymarks.One);
-            Two = new GamePresetPoint(waymarks.Two);
-            Three = new GamePresetPoint(waymarks.Three);
-            Four = new GamePresetPoint(waymarks.Four);
-
-            ActiveMarkers = new BitField8();
-            ActiveMarkers[0] = waymarks.A.Active;
-            ActiveMarkers[1] = waymarks.B.Active;
-            ActiveMarkers[2] = waymarks.C.Active;
-            ActiveMarkers[3] = waymarks.D.Active;
-            ActiveMarkers[4] = waymarks.One.Active;
-            ActiveMarkers[5] = waymarks.Two.Active;
-            ActiveMarkers[6] = waymarks.Three.Active;
-            ActiveMarkers[7] = waymarks.Four.Active;
-
-            _reserved = 0;
-            ContentFinderConditionID = 0;
-            UnixTime = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        }
-
-        public GamePreset(GamePreset_Placement placementPreset)
-        {
-            A = new GamePresetPoint();
-            B = new GamePresetPoint();
-            C = new GamePresetPoint();
-            D = new GamePresetPoint();
-            One = new GamePresetPoint();
-            Two = new GamePresetPoint();
-            Three = new GamePresetPoint();
-            Four = new GamePresetPoint();
-            ActiveMarkers = new BitField8();
-
-            A.X = placementPreset.X.A;
-            A.Y = placementPreset.Y.A;
-            A.Z = placementPreset.Z.A;
-
-            B.X = placementPreset.X.B;
-            B.Y = placementPreset.Y.B;
-            B.Z = placementPreset.Z.B;
-
-            C.X = placementPreset.X.C;
-            C.Y = placementPreset.Y.C;
-            C.Z = placementPreset.Z.C;
-
-            D.X = placementPreset.X.D;
-            D.Y = placementPreset.Y.D;
-            D.Z = placementPreset.Z.D;
-
-            One.X = placementPreset.X.One;
-            One.Y = placementPreset.Y.One;
-            One.Z = placementPreset.Z.One;
-
-            Two.X = placementPreset.X.Two;
-            Two.Y = placementPreset.Y.Two;
-            Two.Z = placementPreset.Z.Two;
-
-            Three.X = placementPreset.X.Three;
-            Three.Y = placementPreset.Y.Three;
-            Three.Z = placementPreset.Z.Three;
-
-            Four.X = placementPreset.X.Four;
-            Four.Y = placementPreset.Y.Four;
-            Four.Z = placementPreset.Z.Four;
-
-            ActiveMarkers[0] = placementPreset.Active.A;
-            ActiveMarkers[1] = placementPreset.Active.B;
-            ActiveMarkers[2] = placementPreset.Active.C;
-            ActiveMarkers[3] = placementPreset.Active.D;
-            ActiveMarkers[4] = placementPreset.Active.One;
-            ActiveMarkers[5] = placementPreset.Active.Two;
-            ActiveMarkers[6] = placementPreset.Active.Three;
-            ActiveMarkers[7] = placementPreset.Active.Four;
-
-            _reserved = 0;
-            ContentFinderConditionID = 0;
-            UnixTime = (int)DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-        }
-
-        public override string ToString()
-        {
-            return $"A: {A}\r\n" +
-                   $"B: {B}\r\n" +
-                   $"C: {C}\r\n" +
-                   $"D: {D}\r\n" +
-                   $"1: {One}\r\n" +
-                   $"2: {Two}\r\n" +
-                   $"3: {Three}\r\n" +
-                   $"4: {Four}\r\n" +
-                   $"Active Flags: {ActiveMarkers}\r\n" +
-                   $"Reserved: 0x{_reserved:X}\r\n" +
-                   $"ContentFinderCondition: {ContentFinderConditionID}\r\n" +
-                   $"Timestamp: {UnixTime}";
-        }
-    }
-
     //	The layout of the active flags in memory as used when the game is placing a waymark preset.  Just an eight (C++) bool array.
     [StructLayout(LayoutKind.Sequential, Pack = 0, Size = 8)]
     public struct GamePreset_Placement_AxisActive
@@ -281,6 +54,7 @@ namespace WaymarkPresetPlugin
         }
     }
 
+    // TODO Remove after https://github.com/aers/FFXIVClientStructs/pull/904 got merged
     //	The actual structure used by the game when calling the function to place a waymark preset.
     [StructLayout(LayoutKind.Sequential, Pack = 0, Size = 104)]
     public struct GamePreset_Placement
@@ -290,9 +64,9 @@ namespace WaymarkPresetPlugin
         public GamePreset_Placement_AxisCoords Y;
         public GamePreset_Placement_AxisCoords Z;
 
-        public GamePreset_Placement(GamePreset preset)
+        public GamePreset_Placement(FieldMarkerPreset preset)
         {
-            Active = new GamePreset_Placement_AxisActive(preset.ActiveMarkers);
+            Active = new GamePreset_Placement_AxisActive(new BitField8 {Data = preset.ActiveMarkers});
 
             X = new GamePreset_Placement_AxisCoords();
             Y = new GamePreset_Placement_AxisCoords();
@@ -410,6 +184,23 @@ namespace WaymarkPresetPlugin
         public override string ToString()
         {
             return $"0x{Data:X}";
+        }
+    }
+
+    public static class FieldMarkerPresetExt {
+        public static string AsString(this FieldMarkerPreset preset)
+        {
+            return $"A: {preset.A}\r\n" +
+                   $"B: {preset.B}\r\n" +
+                   $"C: {preset.C}\r\n" +
+                   $"D: {preset.D}\r\n" +
+                   $"1: {preset.One}\r\n" +
+                   $"2: {preset.Two}\r\n" +
+                   $"3: {preset.Three}\r\n" +
+                   $"4: {preset.Four}\r\n" +
+                   $"Active Flags: {preset.ActiveMarkers}\r\n" +
+                   $"ContentFinderCondition: {preset.ContentFinderConditionId}\r\n" +
+                   $"Timestamp: {preset.Timestamp}";
         }
     }
 }

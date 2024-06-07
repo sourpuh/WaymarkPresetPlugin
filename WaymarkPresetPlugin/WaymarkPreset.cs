@@ -1,5 +1,6 @@
 ﻿using System;
 using CheapLoc;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Newtonsoft.Json;
 
 namespace WaymarkPresetPlugin
@@ -74,8 +75,9 @@ namespace WaymarkPresetPlugin
             }
         }
 
-        public static WaymarkPreset Parse(GamePreset gamePreset)
+        public static WaymarkPreset Parse(FieldMarkerPreset gamePreset)
         {
+            var bitArray = new BitField8 {Data = gamePreset.ActiveMarkers};
             WaymarkPreset newPreset = new()
             {
                 A =
@@ -83,7 +85,7 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.A.X / 1000.0f,
                     Y = gamePreset.A.Y / 1000.0f,
                     Z = gamePreset.A.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[0],
+                    Active = bitArray[0],
                     ID = 0
                 },
                 B =
@@ -91,7 +93,7 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.B.X / 1000.0f,
                     Y = gamePreset.B.Y / 1000.0f,
                     Z = gamePreset.B.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[1],
+                    Active = bitArray[1],
                     ID = 1
                 },
                 C =
@@ -99,7 +101,7 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.C.X / 1000.0f,
                     Y = gamePreset.C.Y / 1000.0f,
                     Z = gamePreset.C.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[2],
+                    Active = bitArray[2],
                     ID = 2
                 },
                 D =
@@ -107,7 +109,7 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.D.X / 1000.0f,
                     Y = gamePreset.D.Y / 1000.0f,
                     Z = gamePreset.D.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[3],
+                    Active = bitArray[3],
                     ID = 3
                 },
                 One =
@@ -115,7 +117,7 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.One.X / 1000.0f,
                     Y = gamePreset.One.Y / 1000.0f,
                     Z = gamePreset.One.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[4],
+                    Active = bitArray[4],
                     ID = 4
                 },
                 Two =
@@ -123,7 +125,7 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.Two.X / 1000.0f,
                     Y = gamePreset.Two.Y / 1000.0f,
                     Z = gamePreset.Two.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[5],
+                    Active = bitArray[5],
                     ID = 5
                 },
                 Three =
@@ -131,7 +133,7 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.Three.X / 1000.0f,
                     Y = gamePreset.Three.Y / 1000.0f,
                     Z = gamePreset.Three.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[6],
+                    Active = bitArray[6],
                     ID = 6
                 },
                 Four =
@@ -139,64 +141,66 @@ namespace WaymarkPresetPlugin
                     X = gamePreset.Four.X / 1000.0f,
                     Y = gamePreset.Four.Y / 1000.0f,
                     Z = gamePreset.Four.Z / 1000.0f,
-                    Active = gamePreset.ActiveMarkers[7],
+                    Active = bitArray[7],
                     ID = 7
                 },
-                MapID = gamePreset.ContentFinderConditionID,
-                Time = DateTimeOffset.FromUnixTimeSeconds(gamePreset.UnixTime),
+                MapID = gamePreset.ContentFinderConditionId,
+                Time = DateTimeOffset.FromUnixTimeSeconds(gamePreset.Timestamp),
                 Name = DefaultPresetName
             };
 
             return newPreset;
         }
 
-        public GamePreset GetAsGamePreset()
+        public FieldMarkerPreset GetAsGamePreset()
         {
-            GamePreset preset = new();
+            var bitArray = new BitField8();
+            FieldMarkerPreset preset = new();
 
-            preset.ActiveMarkers[0] = A.Active;
+            bitArray[0] = A.Active;
             preset.A.X = A.Active ? (int)(A.X * 1000.0) : 0;
             preset.A.Y = A.Active ? (int)(A.Y * 1000.0) : 0;
             preset.A.Z = A.Active ? (int)(A.Z * 1000.0) : 0;
 
-            preset.ActiveMarkers[1] = B.Active;
+            bitArray[1] = B.Active;
             preset.B.X = B.Active ? (int)(B.X * 1000.0) : 0;
             preset.B.Y = B.Active ? (int)(B.Y * 1000.0) : 0;
             preset.B.Z = B.Active ? (int)(B.Z * 1000.0) : 0;
 
-            preset.ActiveMarkers[2] = C.Active;
+            bitArray[2] = C.Active;
             preset.C.X = C.Active ? (int)(C.X * 1000.0) : 0;
             preset.C.Y = C.Active ? (int)(C.Y * 1000.0) : 0;
             preset.C.Z = C.Active ? (int)(C.Z * 1000.0) : 0;
 
-            preset.ActiveMarkers[3] = D.Active;
+            bitArray[3] = D.Active;
             preset.D.X = D.Active ? (int)(D.X * 1000.0) : 0;
             preset.D.Y = D.Active ? (int)(D.Y * 1000.0) : 0;
             preset.D.Z = D.Active ? (int)(D.Z * 1000.0) : 0;
 
-            preset.ActiveMarkers[4] = One.Active;
+            bitArray[4] = One.Active;
             preset.One.X = One.Active ? (int)(One.X * 1000.0) : 0;
             preset.One.Y = One.Active ? (int)(One.Y * 1000.0) : 0;
             preset.One.Z = One.Active ? (int)(One.Z * 1000.0) : 0;
 
-            preset.ActiveMarkers[5] = Two.Active;
+            bitArray[5] = Two.Active;
             preset.Two.X = Two.Active ? (int)(Two.X * 1000.0) : 0;
             preset.Two.Y = Two.Active ? (int)(Two.Y * 1000.0) : 0;
             preset.Two.Z = Two.Active ? (int)(Two.Z * 1000.0) : 0;
 
-            preset.ActiveMarkers[6] = Three.Active;
+            bitArray[6] = Three.Active;
             preset.Three.X = Three.Active ? (int)(Three.X * 1000.0) : 0;
             preset.Three.Y = Three.Active ? (int)(Three.Y * 1000.0) : 0;
             preset.Three.Z = Three.Active ? (int)(Three.Z * 1000.0) : 0;
 
-            preset.ActiveMarkers[7] = Four.Active;
+            bitArray[7] = Four.Active;
             preset.Four.X = Four.Active ? (int)(Four.X * 1000.0) : 0;
             preset.Four.Y = Four.Active ? (int)(Four.Y * 1000.0) : 0;
             preset.Four.Z = Four.Active ? (int)(Four.Z * 1000.0) : 0;
 
-            preset.ContentFinderConditionID = MapID;
-            preset.UnixTime = (int)Time.ToUnixTimeSeconds();
+            preset.ContentFinderConditionId = MapID;
+            preset.Timestamp = (int)Time.ToUnixTimeSeconds();
 
+            preset.ActiveMarkers = bitArray.Data;
             return preset;
         }
 

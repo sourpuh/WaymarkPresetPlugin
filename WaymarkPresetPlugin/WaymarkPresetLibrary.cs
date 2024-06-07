@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using CheapLoc;
 using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Newtonsoft.Json;
 
 namespace WaymarkPresetPlugin
@@ -24,11 +25,11 @@ namespace WaymarkPresetPlugin
             return ImportPreset_Common(importedPreset);
         }
 
-        internal int ImportPreset(GamePreset gamePresetData)
+        internal int ImportPreset(FieldMarkerPreset gamePresetData)
         {
             try
             {
-                WaymarkPreset importedPreset = WaymarkPreset.Parse(gamePresetData);
+                var importedPreset = WaymarkPreset.Parse(gamePresetData);
                 importedPreset.Name = Loc.Localize("Default Preset Name (Imported)", "Imported");
                 return ImportPreset_Common(importedPreset);
             }

@@ -6,6 +6,7 @@ using System.Numerics;
 using System.Runtime.InteropServices;
 using CheapLoc;
 using Dalamud.Interface;
+using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
 using Newtonsoft.Json;
@@ -131,16 +132,13 @@ internal sealed class WindowLibrary : IDisposable
 
             var saveCurrentWaymarksButtonText = Loc.Localize("Button: Save Current Waymarks", "Save Current Waymarks");
             ImGui.SameLine(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(saveCurrentWaymarksButtonText).X - ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().WindowPadding.X);
-            if (MemoryHandler.FoundDirectSaveSigs())
+            if (ImGui.Button(saveCurrentWaymarksButtonText + "###Save Current Waymarks Button"))
             {
-                if (ImGui.Button(saveCurrentWaymarksButtonText + "###Save Current Waymarks Button"))
+                FieldMarkerPreset currentWaymarks = new();
+                if (MemoryHandler.GetCurrentWaymarksAsPresetData(ref currentWaymarks))
                 {
-                    GamePreset currentWaymarks = new();
-                    if (MemoryHandler.GetCurrentWaymarksAsPresetData(ref currentWaymarks))
-                    {
-                        if (Configuration.PresetLibrary.ImportPreset(currentWaymarks) >= 0)
-                            Configuration.Save();
-                    }
+                    if (Configuration.PresetLibrary.ImportPreset(currentWaymarks) >= 0)
+                        Configuration.Save();
                 }
             }
             else
@@ -594,24 +592,21 @@ internal sealed class WindowLibrary : IDisposable
             }
         }
 
-        if (MemoryHandler.FoundSavedPresetSigs())
+        if (ImGui.Button(Loc.Localize("Main Window Text: Import from Game Slot Label", "Or import from game slot: ")))
         {
-            if (ImGui.Button(Loc.Localize("Main Window Text: Import from Game Slot Label", "Or import from game slot: ")))
-            {
-                if (Configuration.PresetLibrary.ImportPreset(MemoryHandler.ReadSlot(mGameSlotDropdownSelection)) >= 0)
-                    Configuration.Save();
-            }
+            if (Configuration.PresetLibrary.ImportPreset(MemoryHandler.ReadSlot(mGameSlotDropdownSelection)) >= 0)
+                Configuration.Save();
+        }
 
-            ImGui.SameLine();
-            var comboWidth = ImGui.CalcTextSize($"{MemoryHandler.MaxPresetSlotNum}").X + ImGui.GetStyle().FramePadding.X * 3f + ImGui.GetTextLineHeightWithSpacing();
-            ImGui.SetNextItemWidth(comboWidth);
-            if (ImGui.BeginCombo("###ImportGameSlotNumberDropdown", $"{mGameSlotDropdownSelection}"))
-            {
-                for (uint i = 1; i <= MemoryHandler.MaxPresetSlotNum; ++i)
-                    if (ImGui.Selectable($"{i}")) mGameSlotDropdownSelection = i;
+        ImGui.SameLine();
+        var comboWidth = ImGui.CalcTextSize($"{MemoryHandler.MaxPresetSlotNum}").X + ImGui.GetStyle().FramePadding.X * 3f + ImGui.GetTextLineHeightWithSpacing();
+        ImGui.SetNextItemWidth(comboWidth);
+        if (ImGui.BeginCombo("###ImportGameSlotNumberDropdown", $"{mGameSlotDropdownSelection}"))
+        {
+            for (uint i = 1; i <= MemoryHandler.MaxPresetSlotNum; ++i)
+                if (ImGui.Selectable($"{i}")) mGameSlotDropdownSelection = i;
 
-                ImGui.EndCombo();
-            }
+            ImGui.EndCombo();
         }
 
         try

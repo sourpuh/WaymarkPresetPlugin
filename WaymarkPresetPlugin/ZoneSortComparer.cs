@@ -7,7 +7,7 @@ namespace WaymarkPresetPlugin
 	{
 		public int Compare(UInt16 a, UInt16 b)
 		{
-			int compareResult = a.CompareTo(b);
+			var compareResult = a.CompareTo(b);
 			return SortDescending ? -compareResult : compareResult;
 		}
 
@@ -20,8 +20,8 @@ namespace WaymarkPresetPlugin
 		{
 			int compareResult;
 
-			bool aValid = ZoneInfoHandler.IsKnownContentFinderID( a );
-			bool bValid = ZoneInfoHandler.IsKnownContentFinderID( b );
+			var aValid = ZoneInfoHandler.IsKnownContentFinderID( a );
+			var bValid = ZoneInfoHandler.IsKnownContentFinderID( b );
 
 			if( !aValid && !bValid )
 			{
@@ -53,8 +53,8 @@ namespace WaymarkPresetPlugin
 			int compareResult;
 
 			//	Try to see if these numbers exist in our sort order.
-			int aPos = ZoneSortOrder.FindIndex( ( UInt16 x )=>{ return x == a; } );
-			int bPos = ZoneSortOrder.FindIndex( ( UInt16 x )=>{ return x == b; } );
+			var aPos = ZoneSortOrder.FindIndex( ( UInt16 x )=>{ return x == a; } );
+			var bPos = ZoneSortOrder.FindIndex( ( UInt16 x )=>{ return x == b; } );
 
 			//	If neither exists in our sort order, compare them as numbers.
 			if( aPos == -1 && bPos == -1)
