@@ -635,7 +635,7 @@ internal sealed class WindowLibrary : IDisposable
             try
             {
                 var str = Configuration.PresetLibrary.Presets.Aggregate("", (current, preset) => current + (WaymarkPresetExport.GetExportString(preset) + "\r\n"));
-                Win32Clipboard.CopyTextToClipboard(str);
+                ImGui.SetClipboardText(str);
             }
             catch (Exception e)
             {

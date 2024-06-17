@@ -10,6 +10,7 @@ using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
+using ImGuiNET;
 using Newtonsoft.Json;
 
 namespace WaymarkPresetPlugin;
@@ -24,7 +25,6 @@ public class Plugin : IDalamudPlugin
     [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] public static IGameGui GameGui { get; private set; } = null!;
     [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
-    [PluginService] public static IFramework Framework { get; private set; } = null!;
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
     [PluginService] public static ICondition Condition { get; private set; } = null!;
 
@@ -118,8 +118,6 @@ public class Plugin : IDalamudPlugin
     //	Text Commands
     protected void ProcessTextCommand(string command, string args)
     {
-        //*****TODO: Don't split, just substring off of the first space so that other stuff is preserved verbatim.
-        //	Seperate into sub-command and paramters.
         var subCommand = "";
         var subCommandArgs = "";
         var argsArray = args.Split(' ');
@@ -194,40 +192,44 @@ public class Plugin : IDalamudPlugin
             return Loc.Localize("Text Command Response: Help - Subcommands", "Valid commands are as follows: {0}, {1}, {2}, {3}, {4}, and {5}.  If no command is provided, the preset library will be opened.  Type \"{6} <command>\" for detailed subcommand information.")
                     .Format(SubcommandPlace, SubcommandImport, SubcommandExport, SubcommandExportAll, SubcommandSlotInfo, SubcommandConfig, $"{TextCommandName} {SubcommandHelp}");
         }
-        else if (args == SubcommandConfig)
+
+        if (args == SubcommandConfig)
         {
             return Loc.Localize("Text Command Response: Help - Config", "Opens the settings window.");
         }
-        else if (args == SubcommandSlotInfo)
+
+        if (args == SubcommandSlotInfo)
         {
             return Loc.Localize("Text Command Response: Help - Slot Info", "Prints the data saved in the game's slots to the chat window.  Usage: \"{0} <slot>\".  The slot number can be any valid game slot.")
-                    .Format($"{TextCommandName} {SubcommandSlotInfo}");
+                .Format($"{TextCommandName} {SubcommandSlotInfo}");
         }
-        else if (args == SubcommandPlace)
+
+        if (args == SubcommandPlace)
         {
             return Loc.Localize("Text Command Response: Help - Place", "Places the preset with the specified name (if possible).  Quotes MUST be used around the name.  May also specify preset index without quotes instead.  Usage: \"{0} <name>|<index>\".  Name must match exactly (besides case).  Index can be any valid libary preset number.")
-                    .Format($"{TextCommandName} {SubcommandPlace}");
+                .Format($"{TextCommandName} {SubcommandPlace}");
         }
-        else if (args == SubcommandImport)
+
+        if (args == SubcommandImport)
         {
             return Loc.Localize("Text Command Response: Help - Import", "Copies one of the game's five preset slots to the library.  Usage: \"{0} <slot>\".  The slot number can be any valid game slot.  Command-line import of a formatted preset string is not supported due to length restrictions in the game's chat box.")
-                    .Format($"{TextCommandName} {SubcommandImport}");
+                .Format($"{TextCommandName} {SubcommandImport}");
         }
-        else if (args == SubcommandExport)
+
+        if (args == SubcommandExport)
         {
             return Loc.Localize("Text Command Response: Help - Export", "Copies a preset from the library to the specified game slot *or* copies a preset to the clipboard, depending on flags and parameters.  Usage: \"{0} [{1}] [{2}] <slot|index> [slot]\".  The slot number can be any valid game slot, and index can be any valid library preset number.  Use of the {3} flag specifies that the first number is a game slot, not a library index.  Use of the {4} flag includes the last-modified time in the clipboard export.")
-                    .Format($"{TextCommandName} {SubcommandExport}", SubCommandArgExportIncludeTime, SubCommandArgExportIsGameSlot, SubCommandArgExportIsGameSlot, SubCommandArgExportIncludeTime);
+                .Format($"{TextCommandName} {SubcommandExport}", SubCommandArgExportIncludeTime, SubCommandArgExportIsGameSlot, SubCommandArgExportIsGameSlot, SubCommandArgExportIncludeTime);
         }
-        else if (args == SubcommandExportAll)
+
+        if (args == SubcommandExportAll)
         {
             return Loc.Localize("Text Command Response: Help - Export All", "Copies all presets in the library to the clipboard, one per line.  Add {0} if you wish to include the last-modified timestamp in the export.")
-                    .Format(SubCommandArgExportIncludeTime);
+                .Format(SubCommandArgExportIncludeTime);
         }
-        else
-        {
-            return Loc.Localize("Text Command Response: Help", "Use \"{0}\" to open the GUI.  Use \"{1}\" for a list of text commands.")
-                    .Format(TextCommandName, $"{TextCommandName} {SubcommandHelp} {SubCommandHelpCommands}");
-        }
+
+        return Loc.Localize("Text Command Response: Help", "Use \"{0}\" to open the GUI.  Use \"{1}\" for a list of text commands.")
+            .Format(TextCommandName, $"{TextCommandName} {SubcommandHelp} {SubCommandHelpCommands}");
     }
 
     protected string ProcessTextCommand_SlotInfo(string args)
@@ -246,11 +248,8 @@ public class Plugin : IDalamudPlugin
                 return Loc.Localize("Text Command Response: Slot Info - Error 1", "An unknown error occured while trying to read the game's waymark data.");
             }
         }
-        else
-        {
-            return Loc.Localize("Text Command Response: Slot Info - Error 3",
-                "An invalid game slot number was provided.");
-        }
+
+        return Loc.Localize("Text Command Response: Slot Info - Error 3", "An invalid game slot number was provided.");
     }
 
     protected string ProcessTextCommand_Place(string args)
@@ -259,7 +258,7 @@ public class Plugin : IDalamudPlugin
             return Loc.Localize("Text Command Response: Place - Error 5", "Unable to place preset.  This probably means that the plugin needs to be updated for a new version of FFXIV.");
 
         //	The index we will want to try to place once we find it.
-        var libraryIndex = -1;
+        int libraryIndex;
 
         //	If argument is in quotes, search for the preset by name.
         //	Otherwise, search by index.
@@ -335,7 +334,7 @@ public class Plugin : IDalamudPlugin
                 }
 
                 var exportStr = includeTimestamp ? JsonConvert.SerializeObject(presetToExport) : WaymarkPresetExport.GetExportString(presetToExport);
-                Win32Clipboard.CopyTextToClipboard(exportStr);
+                ImGui.SetClipboardText(exportStr);
 
                 return Loc.Localize("Text Command Response: Export - Success 1", "Copied to clipboard.");
             }
@@ -385,7 +384,7 @@ public class Plugin : IDalamudPlugin
                 ? Configuration.PresetLibrary.Presets.Aggregate(str, (current, preset) => $"{current}{JsonConvert.SerializeObject(preset)}\r\n")
                 : Configuration.PresetLibrary.Presets.Aggregate(str, (current, preset) => $"{current}{WaymarkPresetExport.GetExportString(preset)}\r\n");
 
-            Win32Clipboard.CopyTextToClipboard(str);
+            ImGui.SetClipboardText(str);
 
             return Loc.Localize("Text Command Response: Export All - Success 1", "Waymark library copied to clipboard.");
         }

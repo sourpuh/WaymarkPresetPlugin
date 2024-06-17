@@ -39,7 +39,7 @@ namespace WaymarkPresetPlugin
             if (LibraryZoneDragAndDropData == nint.Zero || LibraryPresetDragAndDropData == nint.Zero || EditWaymarkDragAndDropData == nint.Zero || EditWaymarkCoordDragAndDropData == nint.Zero)
                 throw new Exception("Error in PluginUI constructor: Unable to allocate memory for drag and drop info.");
 
-            //	Zero out the memory for debug purposes (we are using the zone drag and drop as a UInt16 for now, so keep the other bytes clean).
+            //	Zero out the memory for debug purposes (we are using the zone drag and drop as a ushort for now, so keep the other bytes clean).
             Marshal.WriteInt32(LibraryZoneDragAndDropData, 0);
             Marshal.WriteInt32(LibraryPresetDragAndDropData, 0);
             Marshal.WriteInt32(EditWaymarkDragAndDropData, 0);

@@ -1,34 +1,8 @@
-using System.Text;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Utility;
 
 namespace WaymarkPresetPlugin;
 
 public static class Utils
 {
-    public static string ToStr(SeString content) => content.ToString();
     public static string ToStr(Lumina.Text.SeString content) => content.ToDalamudString().ToString();
-
-    public static string UpperCaseStr(Lumina.Text.SeString s, sbyte article = 0)
-    {
-        if (article == 1)
-            return s.ToDalamudString().ToString();
-
-        var sb = new StringBuilder(s.ToDalamudString().ToString());
-        var lastSpace = true;
-        for (var i = 0; i < sb.Length; ++i)
-        {
-            if (sb[i] == ' ')
-            {
-                lastSpace = true;
-            }
-            else if (lastSpace)
-            {
-                lastSpace = false;
-                sb[i]     = char.ToUpperInvariant(sb[i]);
-            }
-        }
-
-        return sb.ToString();
-    }
 }

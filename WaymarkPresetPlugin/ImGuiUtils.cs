@@ -8,7 +8,6 @@ namespace WaymarkPresetPlugin;
 internal static class ImGuiUtils
 {
     public const ImGuiWindowFlags LayoutWindowFlags = NoSavedSettings | NoMove | NoMouseInputs | NoFocusOnAppearing | NoBackground | NoNav | NoScrollbar;
-    public const ImGuiWindowFlags OverlayWindowFlags = NoDecoration | NoSavedSettings | NoMove | NoMouseInputs | NoFocusOnAppearing | NoBackground | NoNav;
 
     public static void URLLink(string url, string textToShow = "", bool showTooltip = true, ImFontPtr? iconFont = null)
     {
@@ -37,26 +36,6 @@ internal static class ImGuiUtils
                 ImGui.Text(url);
                 ImGui.EndTooltip();
             }
-        }
-        else
-        {
-            AddUnderline(ImGui.GetStyle().Colors[(int)ImGuiCol.Button], 1.0f);
-        }
-    }
-
-    public static void TextLink(Action callback, string textToShow = "")
-    {
-        ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered]);
-        ImGui.Text(textToShow);
-        ImGui.PopStyleColor();
-
-        if (ImGui.IsItemHovered())
-        {
-            ImGui.SetMouseCursor(ImGuiMouseCursor.Hand);
-            if (ImGui.IsMouseClicked(ImGuiMouseButton.Left))
-                callback.Invoke();
-
-            AddUnderline(ImGui.GetStyle().Colors[(int)ImGuiCol.ButtonHovered], 1.0f);
         }
         else
         {
@@ -95,17 +74,6 @@ internal static class ImGuiUtils
             (uint)(color.W * 255f) << 24;
     }
 
-    public static Vector4 ColorUIntToVec(uint color)
-    {
-        return new Vector4
-        {
-            X = (color & 0xFF) / 255f,
-            Y = (color & 0xFF00) / 255f,
-            Z = (color & 0xFF0000) / 255f,
-            W = (color & 0xFF000000) / 255f
-        };
-    }
-
     public static void HelpMarker(string description, bool sameLine = true, string marker = "(?)")
     {
         if (sameLine)
@@ -127,8 +95,8 @@ internal static class ImGuiUtils
         var storedCursorPos = ImGui.GetCursorPos();
         if (iconFont != null)
             ImGui.PushFont(iconFont.Value);
-        ImGui.PushClipRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false);
 
+        ImGui.PushClipRect(ImGui.GetWindowPos(), ImGui.GetWindowPos() + ImGui.GetWindowSize(), false);
         try
         {
             var buttonText = iconFont != null ? "\uF059" : "(?)";

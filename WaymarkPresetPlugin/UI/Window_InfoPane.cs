@@ -124,7 +124,7 @@ internal sealed class WindowInfoPane : IDisposable
                 if (ImGui.Button(Loc.Localize("Button: Export to Clipboard", "Export to Clipboard") + "###Export to Clipboard"))
                 {
                     if (PluginUI.LibraryWindow.SelectedPreset >= 0 && PluginUI.LibraryWindow.SelectedPreset < Configuration.PresetLibrary.Presets.Count)
-                        Win32Clipboard.CopyTextToClipboard(WaymarkPresetExport.GetExportString(Configuration.PresetLibrary.Presets[PluginUI.LibraryWindow.SelectedPreset]));
+                        ImGui.SetClipboardText(WaymarkPresetExport.GetExportString(Configuration.PresetLibrary.Presets[PluginUI.LibraryWindow.SelectedPreset]));
                 }
 
                 ImGui.SameLine();

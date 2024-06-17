@@ -51,7 +51,7 @@ public class Waymark : IEquatable<Waymark>
                Active == other.Active;
     }
 
-    public override bool Equals(Object other)
+    public override bool Equals(object other)
     {
         return other != null && other.GetType() == GetType() && ((Waymark) other).Equals(this);
     }
