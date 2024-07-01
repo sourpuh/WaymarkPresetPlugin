@@ -57,25 +57,9 @@ internal sealed class WindowInfoPane : IDisposable
                 var rightAlignPos = WindowSize.X;
                 var placeButtonText = Loc.Localize("Button: Place", "Place");
                 ImGui.SameLine(rightAlignPos - ImGui.CalcTextSize(placeButtonText).X - ImGui.GetStyle().WindowPadding.X - ImGui.GetStyle().FramePadding.X * 2);
-                if (MemoryHandler.FoundDirectPlacementSigs())
-                {
-                    if (ImGui.Button(placeButtonText + "###Place"))
-                        MemoryHandler.PlacePreset(Configuration.PresetLibrary.Presets[PluginUI.LibraryWindow.SelectedPreset].GetAsGamePreset() /*, mConfiguration.AllowClientSidePlacementInOverworldZones*/);
-                }
-                else
-                {
-                    ImGui.PushStyleColor(ImGuiCol.Button, ImGui.GetStyle().Colors[(int)ImGuiCol.Button] * 0.5f);
-                    ImGui.PushStyleColor(ImGuiCol.ButtonHovered, ImGui.GetStyle().Colors[(int)ImGuiCol.Button]);
-                    ImGui.PushStyleColor(ImGuiCol.ButtonActive, ImGui.GetStyle().Colors[(int)ImGuiCol.Button]);
-                    ImGui.PushStyleColor(ImGuiCol.Text, ImGui.GetStyle().Colors[(int)ImGuiCol.TextDisabled]);
+                if (ImGui.Button(placeButtonText + "###Place"))
+                    MemoryHandler.PlacePreset(Configuration.PresetLibrary.Presets[PluginUI.LibraryWindow.SelectedPreset].GetAsGamePreset());
 
-                    ImGui.Button(placeButtonText + "###Place");
-
-                    ImGui.PopStyleColor();
-                    ImGui.PopStyleColor();
-                    ImGui.PopStyleColor();
-                    ImGui.PopStyleColor();
-                }
 
                 ImGui.Text(Loc.Localize("Info Pane Text: Preset Info Label", "Preset Info:"));
                 var mapViewButtonText = Loc.Localize("Button: Map View", "Map View");

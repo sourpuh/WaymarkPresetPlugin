@@ -17,7 +17,7 @@ namespace WaymarkPresetPlugin;
 
 public class Plugin : IDalamudPlugin
 {
-    [PluginService] public static DalamudPluginInterface PluginInterface { get; private set; } = null!;
+    [PluginService] public static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] public static IDataManager Data { get; private set; } = null!;
     [PluginService] public static ITextureProvider Texture { get; private set; } = null!;
     [PluginService] public static ICommandManager Commands { get; private set; } = null!;
@@ -54,7 +54,6 @@ public class Plugin : IDalamudPlugin
         //	Configuration
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
-        MemoryHandler.Init();
         ZoneInfoHandler.Init();
 
         //	UI Initialization
@@ -83,7 +82,6 @@ public class Plugin : IDalamudPlugin
         PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
 
         PluginUI?.Dispose();
-        MemoryHandler.Uninit();
     }
 
     protected void OnLanguageChanged(string langCode)
@@ -254,9 +252,6 @@ public class Plugin : IDalamudPlugin
 
     protected string ProcessTextCommand_Place(string args)
     {
-        if (!MemoryHandler.FoundDirectPlacementSigs())
-            return Loc.Localize("Text Command Response: Place - Error 5", "Unable to place preset.  This probably means that the plugin needs to be updated for a new version of FFXIV.");
-
         //	The index we will want to try to place once we find it.
         int libraryIndex;
 
@@ -421,7 +416,6 @@ public class Plugin : IDalamudPlugin
 
     internal bool InternalCommand_PlacePresetByIndex(int index, bool requireZoneMatch = true)
     {
-        if (!MemoryHandler.FoundDirectPlacementSigs()) return false;
         if (index < 0 || index >= Configuration.PresetLibrary.Presets.Count) return false;
         if (requireZoneMatch && Configuration.PresetLibrary.Presets[index].MapID !=
             ZoneInfoHandler.GetContentFinderIDFromTerritoryTypeID(ClientState.TerritoryType)) return false;

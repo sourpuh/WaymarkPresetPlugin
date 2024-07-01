@@ -82,65 +82,65 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
         {
             A =
             {
-                X = gamePreset.A.X / 1000.0f,
-                Y = gamePreset.A.Y / 1000.0f,
-                Z = gamePreset.A.Z / 1000.0f,
+                X = gamePreset.Markers[0].X / 1000.0f,
+                Y = gamePreset.Markers[0].Y / 1000.0f,
+                Z = gamePreset.Markers[0].Z / 1000.0f,
                 Active = bitArray[0],
                 ID = 0
             },
             B =
             {
-                X = gamePreset.B.X / 1000.0f,
-                Y = gamePreset.B.Y / 1000.0f,
-                Z = gamePreset.B.Z / 1000.0f,
+                X = gamePreset.Markers[1].X / 1000.0f,
+                Y = gamePreset.Markers[1].Y / 1000.0f,
+                Z = gamePreset.Markers[1].Z / 1000.0f,
                 Active = bitArray[1],
                 ID = 1
             },
             C =
             {
-                X = gamePreset.C.X / 1000.0f,
-                Y = gamePreset.C.Y / 1000.0f,
-                Z = gamePreset.C.Z / 1000.0f,
+                X = gamePreset.Markers[2].X / 1000.0f,
+                Y = gamePreset.Markers[2].Y / 1000.0f,
+                Z = gamePreset.Markers[2].Z / 1000.0f,
                 Active = bitArray[2],
                 ID = 2
             },
             D =
             {
-                X = gamePreset.D.X / 1000.0f,
-                Y = gamePreset.D.Y / 1000.0f,
-                Z = gamePreset.D.Z / 1000.0f,
+                X = gamePreset.Markers[3].X / 1000.0f,
+                Y = gamePreset.Markers[3].Y / 1000.0f,
+                Z = gamePreset.Markers[3].Z / 1000.0f,
                 Active = bitArray[3],
                 ID = 3
             },
             One =
             {
-                X = gamePreset.One.X / 1000.0f,
-                Y = gamePreset.One.Y / 1000.0f,
-                Z = gamePreset.One.Z / 1000.0f,
+                X = gamePreset.Markers[4].X / 1000.0f,
+                Y = gamePreset.Markers[4].Y / 1000.0f,
+                Z = gamePreset.Markers[4].Z / 1000.0f,
                 Active = bitArray[4],
                 ID = 4
             },
             Two =
             {
-                X = gamePreset.Two.X / 1000.0f,
-                Y = gamePreset.Two.Y / 1000.0f,
-                Z = gamePreset.Two.Z / 1000.0f,
+                X = gamePreset.Markers[5].X / 1000.0f,
+                Y = gamePreset.Markers[5].Y / 1000.0f,
+                Z = gamePreset.Markers[5].Z / 1000.0f,
                 Active = bitArray[5],
                 ID = 5
             },
             Three =
             {
-                X = gamePreset.Three.X / 1000.0f,
-                Y = gamePreset.Three.Y / 1000.0f,
-                Z = gamePreset.Three.Z / 1000.0f,
+                X = gamePreset.Markers[6].X / 1000.0f,
+                Y = gamePreset.Markers[6].Y / 1000.0f,
+                Z = gamePreset.Markers[6].Z / 1000.0f,
                 Active = bitArray[6],
                 ID = 6
             },
             Four =
             {
-                X = gamePreset.Four.X / 1000.0f,
-                Y = gamePreset.Four.Y / 1000.0f,
-                Z = gamePreset.Four.Z / 1000.0f,
+                X = gamePreset.Markers[7].X / 1000.0f,
+                Y = gamePreset.Markers[7].Y / 1000.0f,
+                Z = gamePreset.Markers[7].Z / 1000.0f,
                 Active = bitArray[7],
                 ID = 7
             },
@@ -158,44 +158,44 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
         FieldMarkerPreset preset = new();
 
         bitArray[0] = A.Active;
-        preset.A.X = A.Active ? (int)(A.X * 1000.0) : 0;
-        preset.A.Y = A.Active ? (int)(A.Y * 1000.0) : 0;
-        preset.A.Z = A.Active ? (int)(A.Z * 1000.0) : 0;
+        preset.Markers[0].X = A.Active ? (int)(A.X * 1000.0) : 0;
+        preset.Markers[0].Y = A.Active ? (int)(A.Y * 1000.0) : 0;
+        preset.Markers[0].Z = A.Active ? (int)(A.Z * 1000.0) : 0;
 
         bitArray[1] = B.Active;
-        preset.B.X = B.Active ? (int)(B.X * 1000.0) : 0;
-        preset.B.Y = B.Active ? (int)(B.Y * 1000.0) : 0;
-        preset.B.Z = B.Active ? (int)(B.Z * 1000.0) : 0;
+        preset.Markers[1].X = B.Active ? (int)(B.X * 1000.0) : 0;
+        preset.Markers[1].Y = B.Active ? (int)(B.Y * 1000.0) : 0;
+        preset.Markers[1].Z = B.Active ? (int)(B.Z * 1000.0) : 0;
 
         bitArray[2] = C.Active;
-        preset.C.X = C.Active ? (int)(C.X * 1000.0) : 0;
-        preset.C.Y = C.Active ? (int)(C.Y * 1000.0) : 0;
-        preset.C.Z = C.Active ? (int)(C.Z * 1000.0) : 0;
+        preset.Markers[2].X = C.Active ? (int)(C.X * 1000.0) : 0;
+        preset.Markers[2].Y = C.Active ? (int)(C.Y * 1000.0) : 0;
+        preset.Markers[2].Z = C.Active ? (int)(C.Z * 1000.0) : 0;
 
         bitArray[3] = D.Active;
-        preset.D.X = D.Active ? (int)(D.X * 1000.0) : 0;
-        preset.D.Y = D.Active ? (int)(D.Y * 1000.0) : 0;
-        preset.D.Z = D.Active ? (int)(D.Z * 1000.0) : 0;
+        preset.Markers[3].X = D.Active ? (int)(D.X * 1000.0) : 0;
+        preset.Markers[3].Y = D.Active ? (int)(D.Y * 1000.0) : 0;
+        preset.Markers[3].Z = D.Active ? (int)(D.Z * 1000.0) : 0;
 
         bitArray[4] = One.Active;
-        preset.One.X = One.Active ? (int)(One.X * 1000.0) : 0;
-        preset.One.Y = One.Active ? (int)(One.Y * 1000.0) : 0;
-        preset.One.Z = One.Active ? (int)(One.Z * 1000.0) : 0;
+        preset.Markers[4].X = One.Active ? (int)(One.X * 1000.0) : 0;
+        preset.Markers[4].Y = One.Active ? (int)(One.Y * 1000.0) : 0;
+        preset.Markers[4].Z = One.Active ? (int)(One.Z * 1000.0) : 0;
 
         bitArray[5] = Two.Active;
-        preset.Two.X = Two.Active ? (int)(Two.X * 1000.0) : 0;
-        preset.Two.Y = Two.Active ? (int)(Two.Y * 1000.0) : 0;
-        preset.Two.Z = Two.Active ? (int)(Two.Z * 1000.0) : 0;
+        preset.Markers[5].X = Two.Active ? (int)(Two.X * 1000.0) : 0;
+        preset.Markers[5].Y = Two.Active ? (int)(Two.Y * 1000.0) : 0;
+        preset.Markers[5].Z = Two.Active ? (int)(Two.Z * 1000.0) : 0;
 
         bitArray[6] = Three.Active;
-        preset.Three.X = Three.Active ? (int)(Three.X * 1000.0) : 0;
-        preset.Three.Y = Three.Active ? (int)(Three.Y * 1000.0) : 0;
-        preset.Three.Z = Three.Active ? (int)(Three.Z * 1000.0) : 0;
+        preset.Markers[6].X = Three.Active ? (int)(Three.X * 1000.0) : 0;
+        preset.Markers[6].Y = Three.Active ? (int)(Three.Y * 1000.0) : 0;
+        preset.Markers[6].Z = Three.Active ? (int)(Three.Z * 1000.0) : 0;
 
         bitArray[7] = Four.Active;
-        preset.Four.X = Four.Active ? (int)(Four.X * 1000.0) : 0;
-        preset.Four.Y = Four.Active ? (int)(Four.Y * 1000.0) : 0;
-        preset.Four.Z = Four.Active ? (int)(Four.Z * 1000.0) : 0;
+        preset.Markers[7].X = Four.Active ? (int)(Four.X * 1000.0) : 0;
+        preset.Markers[7].Y = Four.Active ? (int)(Four.Y * 1000.0) : 0;
+        preset.Markers[7].Z = Four.Active ? (int)(Four.Z * 1000.0) : 0;
 
         preset.ContentFinderConditionId = MapID;
         preset.Timestamp = (int)Time.ToUnixTimeSeconds();

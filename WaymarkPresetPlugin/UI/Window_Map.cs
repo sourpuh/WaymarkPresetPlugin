@@ -7,10 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using CheapLoc;
 using Dalamud.Interface;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Utility;
 using ImGuiNET;
-using ImGuiScene;
 using Newtonsoft.Json;
 
 namespace WaymarkPresetPlugin.UI;
@@ -407,15 +407,14 @@ internal sealed class WindowMap : IDisposable
                             byte[] texData;
                             if (parchmentTexFile != null)
                             {
-                                texData = MapTextureBlend(texFile.GetRgbaImageData(),
-                                    parchmentTexFile.GetRgbaImageData());
+                                texData = MapTextureBlend(texFile.GetRgbaImageData(), parchmentTexFile.GetRgbaImageData());
                             }
                             else
                             {
                                 texData = texFile.GetRgbaImageData();
                             }
 
-                            var tex = Plugin.PluginInterface.UiBuilder.LoadImageRaw(texData, texFile.Header.Width, texFile.Header.Height, 4);
+                            var tex = Plugin.Texture.CreateFromRaw(RawImageSpecification.Rgba32(texFile.Header.Width, texFile.Header.Height), texData);
                             if (tex.ImGuiHandle != IntPtr.Zero)
                             {
                                 try

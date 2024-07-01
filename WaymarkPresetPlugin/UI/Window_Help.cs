@@ -4,7 +4,7 @@ using System.IO;
 using System.Numerics;
 using System.Runtime.InteropServices;
 using CheapLoc;
-using Dalamud.Interface.Internal;
+using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using ImGuiNET;
 
@@ -37,7 +37,7 @@ internal sealed class WindowHelp : IDisposable
         PluginUI = UI;
         Configuration = configuration;
         EditWaymarkCoordDragAndDropData = editWaymarkCoordDragAndDropData;
-        CoordinateSystemsDiagram = Plugin.PluginInterface.UiBuilder.LoadImage(Path.Join(Plugin.PluginInterface.AssemblyLocation.DirectoryName, "Resources", "CoordinateSystemDiagrams.png"));
+        CoordinateSystemsDiagram = Plugin.Texture.GetFromFile(Path.Join(Plugin.PluginInterface.AssemblyLocation.DirectoryName, "Resources", "CoordinateSystemDiagrams.png")).RentAsync().Result;
     }
 
     public void Dispose()
