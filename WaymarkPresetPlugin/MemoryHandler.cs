@@ -16,7 +16,7 @@ public static class MemoryHandler
 
 	public static unsafe FieldMarkerPreset ReadSlot(uint slotNum)
 	{
-		return FieldMarkerModule.Instance()->Presets[(int)slotNum];
+		return FieldMarkerModule.Instance()->Presets[(int)slotNum-1];
 	}
 
 	public static unsafe bool WriteSlot(int slotNum, FieldMarkerPreset preset)
