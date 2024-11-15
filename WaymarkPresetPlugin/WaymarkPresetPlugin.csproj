@@ -2,7 +2,7 @@
 	<PropertyGroup>
 		<TargetFramework>net8.0-windows</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
-		<Version>1.5.2.2</Version>
+		<Version>1.5.2.5</Version>
 		<Authors>Infi, PunishedPineapple</Authors>
 		<Product />
 		<Copyright>Copyright @Infi, PunishedPineapple 2020-2024</Copyright>
