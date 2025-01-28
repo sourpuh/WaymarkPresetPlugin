@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
-using Lumina.Excel.Sheets;
 
 namespace WaymarkPresetPlugin;
 
@@ -23,11 +22,6 @@ public static class ZoneInfoHandler
 
     public static void Init()
     {
-        //	Get the game sheets that we need to populate a zone dictionary.
-        var territorySheet = Plugin.Data.GetExcelSheet<TerritoryType>()!;
-        var contentFinderSheet = Plugin.Data.GetExcelSheet<ContentFinderCondition>()!;
-        var mapSheet = Plugin.Data.GetExcelSheet<Map>()!;
-
         //	Clean out anything that we had before.
         ZoneInfoDict.Clear();
         TerritoryTypeIDToContentFinderIDDict.Clear();
@@ -40,15 +34,14 @@ public static class ZoneInfoHandler
         //	TerritoryType.  The zone name is correlated in PlaceName, and the duty name and ContentLink IDs are in ContentFinderCondition.  We are using the Content link because that's what's
         //	returned by the best (working) function that I have been able to find so far for the current instance zone.  Confusingly, as scope has changed a bit, we want to store the actual
         //	ID of the maps for these zones too.  The best solution (for the time being) seems to be to store a pseudo map name string (the base of the map names for that zone) that can be cross-referenced later.
-        foreach (var zone in territorySheet)
+        foreach (var zone in Sheets.TerritorySheet)
         {
             if (ZoneInfoDict.ContainsKey((ushort) zone.ContentFinderCondition.RowId) || (zone.ExclusiveType != 2 && !BodgeIncludeContentFinderConditionIDs.Contains((ushort)zone.ContentFinderCondition.RowId)))
                 continue;
 
-            if (!contentFinderSheet.HasRow(zone.ContentFinderCondition.RowId))
+            if (!Sheets.ContentFinderSheet.TryGetRow(zone.ContentFinderCondition.RowId, out var contentRow))
                 continue;
 
-            var contentRow = contentFinderSheet.GetRow(zone.ContentFinderCondition.RowId);
             if (contentRow.ContentLinkType is <= 0 or >= 3 && !BodgeIncludeContentFinderConditionIDs.Contains((ushort) zone.ContentFinderCondition.RowId))
                 continue;
 
@@ -58,20 +51,18 @@ public static class ZoneInfoHandler
                 if (dutyName.Length > 0)
                     dutyName = dutyName.First().ToString().ToUpper() + dutyName[1..];
 
-                ZoneInfoDict.Add(
-                    (ushort) zone.ContentFinderCondition.RowId,
-                    new ZoneInfo(dutyName, Utils.ToStr(zone.PlaceName.Value!.Name), zone.RowId, zone.Map.Value!.Id.ToString().Split('/')[0], (ushort) zone.ContentFinderCondition.RowId, contentRow.Content.RowId));
+                ZoneInfoDict.Add((ushort) zone.ContentFinderCondition.RowId, new ZoneInfo(dutyName, Utils.ToStr(zone.PlaceName.Value!.Name), zone.RowId, zone.Map.Value!.Id.ExtractText().Split('/')[0], (ushort) zone.ContentFinderCondition.RowId, contentRow.Content.RowId));
             }
 
             TerritoryTypeIDToContentFinderIDDict.TryAdd(zone.RowId, (ushort) zone.ContentFinderCondition.RowId);
         }
 
-        //	Now get all of the map info for each territory.  We're doing it this way rather than solely taking the map column
-        //	from the TerritoryType sheet because it's easier to handle when a territory has multiple maps this way, rather than
+        //	Now get all the map info for each territory.  We're doing it this way rather than solely taking the map column
+        //	from the TerritoryType sheet. It's easier to handle when a territory has multiple maps this way, rather than
         //	testing each map name for something other than a "/00" and then incrementing until we find where the maps stop existing.
-        foreach (var map in mapSheet)
+        foreach (var map in Sheets.MapSheet)
         {
-            var mapZoneKey = map.Id.ToString().Split('/')[0];
+            var mapZoneKey = map.Id.ExtractText().Split('/')[0];
 
             if (!MapInfoDict.ContainsKey(mapZoneKey))
                 MapInfoDict.Add(mapZoneKey, []);
@@ -90,15 +81,15 @@ public static class ZoneInfoHandler
         return ZoneInfoDict.TryGetValue(id, out var value) ? value : ZoneInfoDict[0];
     }
 
-    public static ZoneInfo GetZoneInfoFromTerritoryTypeID(uint ID)
+    public static ZoneInfo GetZoneInfoFromTerritoryTypeID(uint typeId)
     {
-        var contentFinderID = GetContentFinderIDFromTerritoryTypeID(ID);
+        var contentFinderID = GetContentFinderIDFromTerritoryTypeID(typeId);
         return ZoneInfoDict.TryGetValue(contentFinderID, out var id) ? id : ZoneInfoDict[0];
     }
 
-    public static ushort GetContentFinderIDFromTerritoryTypeID(uint ID)
+    public static ushort GetContentFinderIDFromTerritoryTypeID(uint typeId)
     {
-        return TerritoryTypeIDToContentFinderIDDict.TryGetValue(ID, out var id) ? id : TerritoryTypeIDToContentFinderIDDict[0];
+        return TerritoryTypeIDToContentFinderIDDict.TryGetValue(typeId, out var id) ? id : TerritoryTypeIDToContentFinderIDDict[0];
     }
 
     public static Dictionary<ushort, ZoneInfo> GetAllZoneInfo()

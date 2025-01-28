@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using CheapLoc;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Newtonsoft.Json;
+using WaymarkPresetPlugin.Resources;
 
 namespace WaymarkPresetPlugin;
 
@@ -17,11 +17,9 @@ public sealed class WaymarkPresetLibrary
     private readonly ZoneSortComparerAlphabetical ZoneSortComparerAlphabetical = new();
     private readonly ZoneSortComparerCustomOrder ZoneSortComparerCustom = new();
 
-    //***** TODO: Subscribe/unsubscribe to preset's zone change event on add/remove from library, and update sort stuff based on that.  We really need to make the presets list externally immutable though, because we're just begging for a big issue at this point.
     internal int ImportPreset(WaymarkPreset preset)
     {
-        WaymarkPreset importedPreset = new(preset);
-        return ImportPreset_Common(importedPreset);
+        return ImportPreset_Common(new WaymarkPreset(preset));
     }
 
     internal int ImportPreset(FieldMarkerPreset gamePresetData)
@@ -29,12 +27,12 @@ public sealed class WaymarkPresetLibrary
         try
         {
             var importedPreset = WaymarkPreset.Parse(gamePresetData);
-            importedPreset.Name = Loc.Localize("Default Preset Name (Imported)", "Imported");
+            importedPreset.Name = Language.DefaultPresetNameImported;
             return ImportPreset_Common(importedPreset);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Plugin.Log.Warning($"Error in WaymarkPresetLibrary.ImportPreset( GamePreset ):\r\n{e}");
+            Plugin.Log.Warning(ex, "Error in WaymarkPresetLibrary.ImportPreset(GamePreset)");
             return -1;
         }
     }
@@ -47,12 +45,11 @@ public sealed class WaymarkPresetLibrary
             if (importedPreset != null)
                 return ImportPreset_Common(importedPreset);
 
-            Plugin.Log.Warning(
-                $"Error in WaymarkPresetLibrary.ImportPreset( string ): Deserialized input resulted in a null!");
+            Plugin.Log.Warning("Error in WaymarkPresetLibrary.ImportPreset(string): Deserialized input resulted in a null!");
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Plugin.Log.Warning($"Error in WaymarkPresetLibrary.ImportPreset( string ):\r\n{e}");
+            Plugin.Log.Warning(ex, "Error in WaymarkPresetLibrary.ImportPreset(string)");
         }
 
         return -1;
@@ -116,6 +113,7 @@ public sealed class WaymarkPresetLibrary
         {
             if (zoneIndex != -1)
                 ZoneSortComparerCustom.ZoneSortOrder.RemoveAt(zoneIndex);
+
             ZoneSortComparerCustom.ZoneSortOrder.Add(zone);
         }
         else
@@ -131,7 +129,7 @@ public sealed class WaymarkPresetLibrary
         }
     }
 
-    internal void RemoveCustomSortEntry(ushort zone)
+    private void RemoveCustomSortEntry(ushort zone)
     {
         var zoneIndex = ZoneSortComparerCustom.ZoneSortOrder.FindIndex((x) => x == zone);
         if (zoneIndex != -1)
@@ -157,7 +155,7 @@ public sealed class WaymarkPresetLibrary
         return [..ZoneSortComparerCustom.ZoneSortOrder];
     }
 
-    internal void SetZoneSortDescending(bool b)
+    private void SetZoneSortDescending(bool b)
     {
         ZoneSortComparerDefault.SortDescending = b;
         ZoneSortComparerAlphabetical.SortDescending = b;

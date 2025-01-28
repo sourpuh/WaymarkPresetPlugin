@@ -1,7 +1,7 @@
 ﻿using System;
-using CheapLoc;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using Newtonsoft.Json;
+using WaymarkPresetPlugin.Resources;
 
 namespace WaymarkPresetPlugin;
 
@@ -15,9 +15,9 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
     //	This looks gross, but it's easier to be compatible with PP presets if we have each waymark be a named member instead of in a collection :(
     public string Name { get; set; } = "Unknown";
 
-    protected static string DefaultPresetName => Loc.Localize("Default Preset Name", "New Preset");
+    protected static string DefaultPresetName => Language.DefaultPresetName;
 
-    //	Don't serialize in order to read older configs properly.
+    //	Don't serialize to read older configs properly.
     [NonSerialized] protected ushort InternalMapID;
 
     //	PP sometimes gives bogus MapIDs that are outside the ushort, so use a converter to handle those.
@@ -28,6 +28,7 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
         set
         {
             var fireEvent = value != InternalMapID;
+
             InternalMapID = value;
             if (fireEvent)
                 MapIDChangedEvent?.Invoke(this, InternalMapID);
@@ -59,20 +60,20 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
 
     public WaymarkPreset(WaymarkPreset objToCopy)
     {
-        if (objToCopy != null)
-        {
-            Name = objToCopy.Name;
-            MapID = objToCopy.MapID;
-            Time = objToCopy.Time;
-            A = new Waymark(objToCopy.A);
-            B = new Waymark(objToCopy.B);
-            C = new Waymark(objToCopy.C);
-            D = new Waymark(objToCopy.D);
-            One = new Waymark(objToCopy.One);
-            Two = new Waymark(objToCopy.Two);
-            Three = new Waymark(objToCopy.Three);
-            Four = new Waymark(objToCopy.Four);
-        }
+        if (objToCopy == null)
+            return;
+
+        Name = objToCopy.Name;
+        MapID = objToCopy.MapID;
+        Time = objToCopy.Time;
+        A = new Waymark(objToCopy.A);
+        B = new Waymark(objToCopy.B);
+        C = new Waymark(objToCopy.C);
+        D = new Waymark(objToCopy.D);
+        One = new Waymark(objToCopy.One);
+        Two = new Waymark(objToCopy.Two);
+        Three = new Waymark(objToCopy.Three);
+        Four = new Waymark(objToCopy.Four);
     }
 
     public static WaymarkPreset Parse(FieldMarkerPreset gamePreset)
@@ -216,7 +217,7 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
             }
             catch
             {
-                zoneName = Loc.Localize("Preset Info Error: Zone Name 1", "Error retrieving zone name!");
+                zoneName = Language.PresetInfoErrorZoneName1;
             }
         }
 
@@ -228,8 +229,8 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
                $"2: {Two.GetWaymarkDataString()}\r\n" +
                $"3: {Three.GetWaymarkDataString()}\r\n" +
                $"4: {Four.GetWaymarkDataString()}\r\n" +
-               $"{Loc.Localize("Preset Info Label: Zone", "Zone: ")}{zoneName}\r\n" +
-               $"{Loc.Localize("Preset Info Label: Last Modified", "Last Modified: ")}{Time.LocalDateTime}";
+               $"{Language.PresetInfoLabelZone}{zoneName}\r\n" +
+               $"{Language.PresetInfoLabelLastModified}{Time.LocalDateTime}";
     }
 
     public Waymark this[int i] =>
@@ -243,7 +244,7 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
             5 => Two,
             6 => Three,
             7 => Four,
-            _ => throw new ArgumentOutOfRangeException($"Error in WaymarkPreset indexer: Invalid index \"{i}\""),
+            _ => throw new ArgumentOutOfRangeException($"Error in WaymarkPreset indexer: Invalid index {i}"),
         };
 
     public string GetNameForWaymarkIndex(int i, bool getLongName = false)
@@ -258,7 +259,7 @@ public class WaymarkPreset : IEquatable<WaymarkPreset>
             5 => getLongName ? "Two" : "2",
             6 => getLongName ? "Three" : "3",
             7 => getLongName ? "Four" : "4",
-            _ => throw new ArgumentOutOfRangeException($"Error in WaymarkPreset.GetNameForWaymarkIndex(): Invalid index \"{i}\""),
+            _ => throw new ArgumentOutOfRangeException($"Error in WaymarkPreset.GetNameForWaymarkIndex(): Invalid index {i}"),
         };
     }
 

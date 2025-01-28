@@ -1,16 +1,16 @@
 ﻿using System;
 using System.Numerics;
-using CheapLoc;
+using WaymarkPresetPlugin.Resources;
 
 namespace WaymarkPresetPlugin;
 
 public class Waymark : IEquatable<Waymark>
 {
-    public float X { get; set; } = 0.0f;
-    public float Y { get; set; } = 0.0f;
-    public float Z { get; set; } = 0.0f;
-    public int ID { get; set; } = 0; //This is kind of a BS field, but keep it for import/export interop with PP.
-    public bool Active { get; set; } = false;
+    public float X { get; set; }
+    public float Y { get; set; }
+    public float Z { get; set; }
+    public int ID { get; set; }
+    public bool Active { get; set; }
 
     [NonSerialized] private const float MaxEqualCoordDifference = 0.01f;
 
@@ -18,19 +18,19 @@ public class Waymark : IEquatable<Waymark>
 
     public Waymark(Waymark objToCopy)
     {
-        if (objToCopy != null)
-        {
-            X = objToCopy.X;
-            Y = objToCopy.Y;
-            Z = objToCopy.Z;
-            ID = objToCopy.ID;
-            Active = objToCopy.Active;
-        }
+        if (objToCopy == null)
+            return;
+
+        X = objToCopy.X;
+        Y = objToCopy.Y;
+        Z = objToCopy.Z;
+        ID = objToCopy.ID;
+        Active = objToCopy.Active;
     }
 
     public string GetWaymarkDataString()
     {
-        return Active ? $"{X,7:0.00}, {Y,7:0.00}, {Z,7:0.00}" : Loc.Localize("Waymark Status: Unused", "Unused");
+        return Active ? $"{X,7:0.00}, {Y,7:0.00}, {Z,7:0.00}" : Language.WaymarkStatusUnused;
     }
 
     public void SetCoords(Vector3 pos)

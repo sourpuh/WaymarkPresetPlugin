@@ -1,10 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace WaymarkPresetPlugin;
 
 public class ZoneSearcher
 {
+    private string LastSearchString { get; set; } = "";
+    private List<ushort> FoundZones { get; set; } = [];
+
     public ZoneSearcher()
     {
         RebuildFoundZonesList();
@@ -21,24 +25,17 @@ public class ZoneSearcher
         return FoundZones.ToArray();
     }
 
-    protected void RebuildFoundZonesList()
+    private void RebuildFoundZonesList()
     {
         FoundZones.Clear();
-        foreach (var zone in ZoneInfoHandler.GetAllZoneInfo())
-        {
-            if (!FoundZones.Contains(zone.Key) && (LastSearchString.Length < 1 ||
-                                                   zone.Value.DutyName.ToLower().Contains(LastSearchString) ||
-                                                   zone.Value.ZoneName.ToLower().Contains(LastSearchString) ||
-                                                   zone.Value.ContentFinderConditionID.ToString()
-                                                       .Contains(LastSearchString) ||
-                                                   zone.Value.TerritoryTypeID.ToString()
-                                                       .Contains(LastSearchString)))
-            {
-                FoundZones.Add(zone.Key);
-            }
-        }
+        foreach (var zone in ZoneInfoHandler
+                     .GetAllZoneInfo()
+                     .Where(zone => !FoundZones.Contains(zone.Key))
+                     .Where(zone => LastSearchString.Length < 1
+                                    || zone.Value.DutyName.Contains(LastSearchString, StringComparison.CurrentCultureIgnoreCase)
+                                    || zone.Value.ZoneName.Contains(LastSearchString, StringComparison.CurrentCultureIgnoreCase)
+                                    || zone.Value.ContentFinderConditionID.ToString().Contains(LastSearchString)
+                                    || zone.Value.TerritoryTypeID.ToString().Contains(LastSearchString)))
+            FoundZones.Add(zone.Key);
     }
-
-    protected string LastSearchString { get; set; } = "";
-    protected List<ushort> FoundZones { get; set; } = new();
 }

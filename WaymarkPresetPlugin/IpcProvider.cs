@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Dalamud.Plugin;
 using Dalamud.Plugin.Ipc;
 
 namespace WaymarkPresetPlugin;

@@ -12,9 +12,9 @@ namespace WaymarkPresetPlugin;
 public static class MemoryHandler
 {
 	//	Magic Numbers
-	public static readonly int MaxPresetSlotNum = 30;
+    public const int MaxPresetSlotNum = 30;
 
-	public static unsafe FieldMarkerPreset ReadSlot(uint slotNum)
+    public static unsafe FieldMarkerPreset ReadSlot(uint slotNum)
 	{
 		return FieldMarkerModule.Instance()->Presets[(int)slotNum-1];
 	}
@@ -22,7 +22,6 @@ public static class MemoryHandler
 	public static unsafe bool WriteSlot(int slotNum, FieldMarkerPreset preset)
 	{
 		var module = FieldMarkerModule.Instance();
-
 		if (module->Presets.Length < slotNum)
 			return false;
 
@@ -30,7 +29,7 @@ public static class MemoryHandler
 
 		// Zero-based index
 		var pointer = module->Presets.GetPointer(slotNum - 1);
-		*pointer = preset;
+		*pointer = preset; // overwrite slot data
 		return true;
 	}
 
@@ -45,24 +44,24 @@ public static class MemoryHandler
 		DirectPlacePreset(preset);
 	}
 
-private static unsafe void DirectPlacePreset(FieldMarkerPreset preset)
-{
-	if(IsSafeToDirectPlacePreset())
-	{
-		var bitArray = new BitArray(new[] {preset.ActiveMarkers});
+    private static unsafe void DirectPlacePreset(FieldMarkerPreset preset)
+    {
+        if (!IsSafeToDirectPlacePreset())
+            return;
 
-		var placementStruct = new MarkerPresetPlacement();
-		foreach (var idx in Enumerable.Range(0,8))
-		{
-			placementStruct.Active[idx] = bitArray[idx];
-			placementStruct.X[idx] = preset.Markers[idx].X;
-			placementStruct.Y[idx] = preset.Markers[idx].Y;
-			placementStruct.Z[idx] = preset.Markers[idx].Z;
-		}
+        var bitArray = new BitArray(new[] {preset.ActiveMarkers});
 
-		MarkingController.Instance()->PlacePreset(&placementStruct);
-	}
-}
+        var placementStruct = new MarkerPresetPlacement();
+        foreach (var idx in Enumerable.Range(0,8))
+        {
+            placementStruct.Active[idx] = bitArray[idx];
+            placementStruct.X[idx] = preset.Markers[idx].X;
+            placementStruct.Y[idx] = preset.Markers[idx].Y;
+            placementStruct.Z[idx] = preset.Markers[idx].Z;
+        }
+
+        MarkingController.Instance()->PlacePreset(&placementStruct);
+    }
 
 	public static unsafe bool GetCurrentWaymarksAsPresetData(ref FieldMarkerPreset rPresetData)
 	{

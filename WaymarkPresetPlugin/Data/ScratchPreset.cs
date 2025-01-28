@@ -2,14 +2,14 @@
 using System.Linq;
 using System.Numerics;
 
-namespace WaymarkPresetPlugin.UI;
+namespace WaymarkPresetPlugin.Data;
 
 //	We need this because we can't pass the properties from the regular Waymark class as refs to ImGui stuff.
 internal sealed class ScratchPreset
 {
-    public string Name = "";
-    public ushort MapID = 0;
-    public List<ScratchWaymark> Waymarks;
+    public string Name;
+    public ushort MapID;
+    public readonly List<ScratchWaymark> Waymarks;
 
     public class ScratchWaymark
     {
@@ -61,9 +61,8 @@ internal sealed class ScratchPreset
     {
         Name = preset.Name;
         MapID = preset.MapID;
-        Waymarks = new();
+        Waymarks = [new ScratchWaymark()];
 
-        Waymarks.Add(new ScratchWaymark());
         Waymarks.Last().X = preset.A.X;
         Waymarks.Last().Y = preset.A.Y;
         Waymarks.Last().Z = preset.A.Z;

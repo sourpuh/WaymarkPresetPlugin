@@ -1,10 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Globalization;
 using System.Linq;
-using CheapLoc;
-using Dalamud.Game;
 using Dalamud.Game.Command;
+using Dalamud.Interface.Textures.TextureWraps;
+using Dalamud.Interface.Windowing;
 using Dalamud.IoC;
 using Dalamud.Plugin;
 using Dalamud.Plugin.Services;
@@ -12,6 +12,12 @@ using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using ImGuiNET;
 using Newtonsoft.Json;
+using WaymarkPresetPlugin.Resources;
+using WaymarkPresetPlugin.Windows.Config;
+using WaymarkPresetPlugin.Windows.Editor;
+using WaymarkPresetPlugin.Windows.InfoPane;
+using WaymarkPresetPlugin.Windows.Library;
+using WaymarkPresetPlugin.Windows.Map;
 
 namespace WaymarkPresetPlugin;
 
@@ -24,7 +30,6 @@ public class Plugin : IDalamudPlugin
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
     [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] public static IGameGui GameGui { get; private set; } = null!;
-    [PluginService] public static ISigScanner SigScanner { get; private set; } = null!;
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
     [PluginService] public static ICondition Condition { get; private set; } = null!;
 
@@ -43,13 +48,23 @@ public class Plugin : IDalamudPlugin
     internal static string SubCommandArgExportIsGameSlot => "-g";
 
     public ushort CurrentTerritoryTypeID { get; protected set; }
-    protected Configuration Configuration;
-    protected PluginUI PluginUI;
+    public Configuration Configuration;
+
+    public readonly WindowSystem WindowSystem = new("WaymarkPresetPlugin");
+    public ConfigWindow ConfigWindow { get; init; }
+    public EditorWindow EditorWindow { get; init; }
+    public InfoPaneWindow InfoPaneWindow { get; init; }
+    public LayoutPassWindow LayoutPassWindow { get; init; }
+    public LibraryWindow LibraryWindow { get; init; }
+    public MapWindow MapWindow { get; init; }
+
+    //	The fields below are here because multiple windows might need them.
+    internal readonly IDalamudTextureWrap[] WaymarkIconTextures = new IDalamudTextureWrap[8];
 
     public Plugin()
     {
         //	Localization and Command Initialization
-        OnLanguageChanged(PluginInterface.UiLanguage);
+        LanguageChanged(PluginInterface.UiLanguage);
 
         //	Configuration
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
@@ -57,16 +72,42 @@ public class Plugin : IDalamudPlugin
         ZoneInfoHandler.Init();
 
         //	UI Initialization
-        PluginUI = new PluginUI(Configuration);
+        ConfigWindow = new ConfigWindow(this);
+        EditorWindow = new EditorWindow(this);
+        InfoPaneWindow = new InfoPaneWindow(this);
+        LayoutPassWindow = new LayoutPassWindow(this);
+        LibraryWindow = new LibraryWindow(this);
+        MapWindow = new MapWindow(this);
+        WindowSystem.AddWindow(ConfigWindow);
+        WindowSystem.AddWindow(EditorWindow);
+        WindowSystem.AddWindow(InfoPaneWindow);
+        WindowSystem.AddWindow(LayoutPassWindow);
+        WindowSystem.AddWindow(LibraryWindow);
+        WindowSystem.AddWindow(MapWindow);
+
+        Commands.AddHandler(TextCommandName, new CommandInfo(ProcessTextCommand)
+        {
+            HelpMessage = Language.TextCommandDescription.Format($"{TextCommandName} {SubcommandHelp}")
+        });
 
         //	Event Subscription
-        PluginInterface.UiBuilder.Draw += DrawUI;
-        PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUI;
-        PluginInterface.LanguageChanged += OnLanguageChanged;
+        PluginInterface.UiBuilder.Draw += DrawUi;
+        PluginInterface.UiBuilder.OpenConfigUi += DrawConfigUi;
+        PluginInterface.LanguageChanged += LanguageChanged;
         ClientState.TerritoryChanged += OnTerritoryChanged;
 
         //	IPC
         IpcProvider.RegisterIPC(this);
+
+        //	Load waymark icons.
+        WaymarkIconTextures[0] ??= Texture.GetFromGameIcon(61241).RentAsync().Result; //A
+        WaymarkIconTextures[1] ??= Texture.GetFromGameIcon(61242).RentAsync().Result; //B
+        WaymarkIconTextures[2] ??= Texture.GetFromGameIcon(61243).RentAsync().Result; //C
+        WaymarkIconTextures[3] ??= Texture.GetFromGameIcon(61247).RentAsync().Result; //D
+        WaymarkIconTextures[4] ??= Texture.GetFromGameIcon(61244).RentAsync().Result; //1
+        WaymarkIconTextures[5] ??= Texture.GetFromGameIcon(61245).RentAsync().Result; //2
+        WaymarkIconTextures[6] ??= Texture.GetFromGameIcon(61246).RentAsync().Result; //3
+        WaymarkIconTextures[7] ??= Texture.GetFromGameIcon(61248).RentAsync().Result; //4
     }
 
     //	Cleanup
@@ -75,46 +116,33 @@ public class Plugin : IDalamudPlugin
         IpcProvider.UnregisterIPC();
         Commands.RemoveHandler(TextCommandName);
 
-        PluginInterface.LanguageChanged -= OnLanguageChanged;
+        PluginInterface.LanguageChanged -= LanguageChanged;
         ClientState.TerritoryChanged -= OnTerritoryChanged;
 
-        PluginInterface.UiBuilder.Draw -= DrawUI;
-        PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUI;
+        PluginInterface.UiBuilder.Draw -= DrawUi;
+        PluginInterface.UiBuilder.OpenConfigUi -= DrawConfigUi;
 
-        PluginUI?.Dispose();
+        WindowSystem.RemoveAllWindows();
+
+        ConfigWindow.Dispose();
+        EditorWindow.Dispose();
+        InfoPaneWindow.Dispose();
+        LayoutPassWindow.Dispose();
+        LibraryWindow.Dispose();
+        MapWindow.Dispose();
+
+        //	Clean up any other textures.
+        foreach (var t in WaymarkIconTextures)
+            t?.Dispose();
     }
 
-    protected void OnLanguageChanged(string langCode)
+    private void LanguageChanged(string langCode)
     {
-        var allowedLang = new List<string> { "fr", };
-
-        Log.Information("Trying to set up Loc for culture {0}", langCode);
-
-        if (allowedLang.Contains(langCode))
-        {
-            Loc.Setup(File.ReadAllText(Path.Join(
-                Path.Join(PluginInterface.AssemblyLocation.DirectoryName, "Resources\\Localization\\"),
-                $"loc_{langCode}.json")));
-        }
-        else
-        {
-            Loc.SetupWithFallbacks();
-        }
-
-        //	Set up the command handler with the current language.
-        if (Commands.Commands.ContainsKey(TextCommandName))
-        {
-            Commands.RemoveHandler(TextCommandName);
-        }
-
-        Commands.AddHandler(TextCommandName, new CommandInfo(ProcessTextCommand)
-        {
-            HelpMessage = Loc.Localize("Text Command Description", "Performs waymark preset commands.  Use \"{0}\" for detailed usage information.").Format($"{TextCommandName} {SubcommandHelp}")
-        });
+        Language.Culture = new CultureInfo(langCode);
     }
 
     //	Text Commands
-    protected void ProcessTextCommand(string command, string args)
+    private void ProcessTextCommand(string command, string args)
     {
         var subCommand = "";
         var subCommandArgs = "";
@@ -137,15 +165,11 @@ public class Plugin : IDalamudPlugin
         subCommand = subCommand.ToLower();
         if (subCommand.Length == 0)
         {
-            PluginUI.LibraryWindow.WindowVisible = !PluginUI.LibraryWindow.WindowVisible;
+            LibraryWindow.Toggle();
         }
         else if (subCommand == SubcommandConfig)
         {
-            PluginUI.SettingsWindow.WindowVisible = !PluginUI.SettingsWindow.WindowVisible;
-        }
-        else if (subCommand == "debug")
-        {
-            PluginUI.DebugWindow.WindowVisible = !PluginUI.DebugWindow.WindowVisible;
+            ConfigWindow.Toggle();
         }
         else if (subCommand == SubcommandSlotInfo)
         {
@@ -182,75 +206,53 @@ public class Plugin : IDalamudPlugin
             ChatGui.Print(commandResponse);
     }
 
-    protected string ProcessTextCommand_Help(string args)
+    private string ProcessTextCommand_Help(string args)
     {
         args = args.ToLower();
         if (args == SubCommandHelpCommands)
-        {
-            return Loc.Localize("Text Command Response: Help - Subcommands", "Valid commands are as follows: {0}, {1}, {2}, {3}, {4}, and {5}.  If no command is provided, the preset library will be opened.  Type \"{6} <command>\" for detailed subcommand information.")
-                    .Format(SubcommandPlace, SubcommandImport, SubcommandExport, SubcommandExportAll, SubcommandSlotInfo, SubcommandConfig, $"{TextCommandName} {SubcommandHelp}");
-        }
+            return Language.TextCommandResponseHelpSubcommands.Format(SubcommandPlace, SubcommandImport, SubcommandExport, SubcommandExportAll, SubcommandSlotInfo, SubcommandConfig, $"{TextCommandName} {SubcommandHelp}");
 
         if (args == SubcommandConfig)
-        {
-            return Loc.Localize("Text Command Response: Help - Config", "Opens the settings window.");
-        }
+            return Language.TextCommandResponseHelpConfig;
 
         if (args == SubcommandSlotInfo)
-        {
-            return Loc.Localize("Text Command Response: Help - Slot Info", "Prints the data saved in the game's slots to the chat window.  Usage: \"{0} <slot>\".  The slot number can be any valid game slot.")
-                .Format($"{TextCommandName} {SubcommandSlotInfo}");
-        }
+            return Language.TextCommandResponseHelpSlotInfo.Format($"{TextCommandName} {SubcommandSlotInfo}");
 
         if (args == SubcommandPlace)
-        {
-            return Loc.Localize("Text Command Response: Help - Place", "Places the preset with the specified name (if possible).  Quotes MUST be used around the name.  May also specify preset index without quotes instead.  Usage: \"{0} <name>|<index>\".  Name must match exactly (besides case).  Index can be any valid libary preset number.")
-                .Format($"{TextCommandName} {SubcommandPlace}");
-        }
+            return Language.TextCommandResponseHelpPlace.Format($"{TextCommandName} {SubcommandPlace}");
 
         if (args == SubcommandImport)
-        {
-            return Loc.Localize("Text Command Response: Help - Import", "Copies one of the game's five preset slots to the library.  Usage: \"{0} <slot>\".  The slot number can be any valid game slot.  Command-line import of a formatted preset string is not supported due to length restrictions in the game's chat box.")
-                .Format($"{TextCommandName} {SubcommandImport}");
-        }
+            return Language.TextCommandResponseHelpImport.Format($"{TextCommandName} {SubcommandImport}");
 
         if (args == SubcommandExport)
-        {
-            return Loc.Localize("Text Command Response: Help - Export", "Copies a preset from the library to the specified game slot *or* copies a preset to the clipboard, depending on flags and parameters.  Usage: \"{0} [{1}] [{2}] <slot|index> [slot]\".  The slot number can be any valid game slot, and index can be any valid library preset number.  Use of the {3} flag specifies that the first number is a game slot, not a library index.  Use of the {4} flag includes the last-modified time in the clipboard export.")
-                .Format($"{TextCommandName} {SubcommandExport}", SubCommandArgExportIncludeTime, SubCommandArgExportIsGameSlot, SubCommandArgExportIsGameSlot, SubCommandArgExportIncludeTime);
-        }
+            return Language.TextCommandResponseHelpExport.Format($"{TextCommandName} {SubcommandExport}", SubCommandArgExportIncludeTime, SubCommandArgExportIsGameSlot, SubCommandArgExportIsGameSlot, SubCommandArgExportIncludeTime);
 
         if (args == SubcommandExportAll)
-        {
-            return Loc.Localize("Text Command Response: Help - Export All", "Copies all presets in the library to the clipboard, one per line.  Add {0} if you wish to include the last-modified timestamp in the export.")
-                .Format(SubCommandArgExportIncludeTime);
-        }
+            return Language.TextCommandResponseHelpExportAll.Format(SubCommandArgExportIncludeTime);
 
-        return Loc.Localize("Text Command Response: Help", "Use \"{0}\" to open the GUI.  Use \"{1}\" for a list of text commands.")
-            .Format(TextCommandName, $"{TextCommandName} {SubcommandHelp} {SubCommandHelpCommands}");
+        return Language.TextCommandResponseHelp.Format(TextCommandName, $"{TextCommandName} {SubcommandHelp} {SubCommandHelpCommands}");
     }
 
-    protected string ProcessTextCommand_SlotInfo(string args)
+    private string ProcessTextCommand_SlotInfo(string args)
     {
         if (args.Length == 1 && uint.TryParse(args, out var gameSlotToCopy) && gameSlotToCopy >= 1 && gameSlotToCopy <= MemoryHandler.MaxPresetSlotNum)
         {
             try
             {
                 var tempPreset = WaymarkPreset.Parse(MemoryHandler.ReadSlot(gameSlotToCopy));
-                return Loc.Localize("Text Command Response: Slot Info - Success 1", "Slot {0} Contents:\r\n{1}")
-                        .Format(gameSlotToCopy, tempPreset.GetPresetDataString(Configuration.GetZoneNameDelegate, Configuration.ShowIDNumberNextToZoneNames));
+                return Language.TextCommandResponseSlotInfoSuccess1.Format(gameSlotToCopy, tempPreset.GetPresetDataString(Configuration.GetZoneNameDelegate, Configuration.ShowIDNumberNextToZoneNames));
             }
-            catch (Exception e)
+            catch (Exception ex)
             {
-                Log.Error($"An unknown error occured while trying to read the game's waymark data:\r\n{e}");
-                return Loc.Localize("Text Command Response: Slot Info - Error 1", "An unknown error occured while trying to read the game's waymark data.");
+                Log.Error(ex, "An unknown error occured while trying to read the game's waymark data");
+                return Language.TextCommandResponseSlotInfoError1;
             }
         }
 
-        return Loc.Localize("Text Command Response: Slot Info - Error 3", "An invalid game slot number was provided.");
+        return Language.TextCommandResponseSlotInfoError3;
     }
 
-    protected string ProcessTextCommand_Place(string args)
+    private string ProcessTextCommand_Place(string args)
     {
         //	The index we will want to try to place once we find it.
         int libraryIndex;
@@ -261,26 +263,27 @@ public class Plugin : IDalamudPlugin
         {
             var presetName = args.Trim()[1..^1];
             libraryIndex = Configuration.PresetLibrary.Presets.FindIndex((p) => p.Name.Equals(presetName, StringComparison.OrdinalIgnoreCase));
+
             if (libraryIndex < 0 || libraryIndex >= Configuration.PresetLibrary.Presets.Count)
-                return Loc.Localize("Text Command Response: Place - Error 1", "Unable to find preset \"{0}\".").Format(presetName);
+                return Language.TextCommandResponsePlaceError1.Format(presetName);
         }
         else if (!int.TryParse(args.Trim(), out libraryIndex))
         {
-            return Loc.Localize("Text Command Response: Place - Error 2", "Invalid preset number \"{0}\".").Format(args);
+            return Language.TextCommandResponsePlaceError2.Format(args);
         }
 
         //	Try to do the actual placement.
         if (libraryIndex >= 0 && libraryIndex < Configuration.PresetLibrary.Presets.Count)
-            return InternalCommand_PlacePresetByIndex(libraryIndex, false) ? "" : Loc.Localize("Text Command Response: Place - Error 3", "An unknown error occured placing preset {0}.").Format(libraryIndex);
+            return InternalCommand_PlacePresetByIndex(libraryIndex, false) ? "" : Language.TextCommandResponsePlaceError3.Format(libraryIndex);
 
-        return Loc.Localize("Text Command Response: Place - Error 4", "Invalid preset number \"{0}\".").Format(libraryIndex);
+        return Language.TextCommandResponsePlaceError4.Format(libraryIndex);
 
     }
 
-    protected string ProcessTextCommand_Import(string args)
+    private string ProcessTextCommand_Import(string args)
     {
         if (args.Length != 1 || !uint.TryParse(args, out var gameSlotToCopy) || gameSlotToCopy < 1 || gameSlotToCopy > MemoryHandler.MaxPresetSlotNum)
-            return Loc.Localize("Text Command Response: Import - Error 3", "An invalid game slot number was provided: \"{0}\".").Format(args);
+            return Language.TextCommandResponseImportError3.Format(args);
 
         try
         {
@@ -288,28 +291,28 @@ public class Plugin : IDalamudPlugin
             var importedIndex = Configuration.PresetLibrary.ImportPreset(tempPreset);
             Configuration.Save();
 
-            return Loc.Localize("Text Command Response: Import - Success 1", "Imported game preset {0} as library preset {1}.").Format(gameSlotToCopy, importedIndex);
+            return Language.TextCommandResponseImportSuccess1.Format(gameSlotToCopy, importedIndex);
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error($"An unknown error occured while trying to read the game's waymark data:\r\n{e}");
-            return Loc.Localize("Text Command Response: Import - Error 1", "An unknown error occured while trying to read the game's waymark data.");
+            Log.Error(ex, "An unknown error occured while trying to read the game's waymark data");
+            return Language.TextCommandResponseImportError1;
         }
     }
 
-    protected string ProcessTextCommand_Export(string args)
+    private string ProcessTextCommand_Export(string args)
     {
         var parameters = args.Split();
         var includeTimestamp = parameters.Contains(SubCommandArgExportIncludeTime);
         var useGameSlot = parameters.Contains(SubCommandArgExportIsGameSlot);
         var slotIndexNumbers = parameters.Where(x => int.TryParse(x, out _)).ToList();
-        WaymarkPreset presetToExport = null;
 
         try
         {
             if (slotIndexNumbers.Count < 1)
-                return Loc.Localize("Text Command Response: Export - Error 1", "No slot or index numbers were provided.");
+                return Language.TextCommandResponseExportError1;
 
+            WaymarkPreset presetToExport;
             if (slotIndexNumbers.Count == 1)
             {
                 var indexToExport = int.Parse(slotIndexNumbers[0]);
@@ -318,20 +321,20 @@ public class Plugin : IDalamudPlugin
                     if (indexToExport >= 1 && indexToExport <= MemoryHandler.MaxPresetSlotNum)
                         presetToExport = WaymarkPreset.Parse(MemoryHandler.ReadSlot((uint)indexToExport));
                     else
-                        return Loc.Localize("Text Command Response: Export - Error 2", "An invalid game slot number ({0}) was provided.").Format(indexToExport);
+                        return Language.TextCommandResponseExportError2.Format(indexToExport);
                 }
                 else
                 {
                     if (indexToExport >= 0 && indexToExport < Configuration.PresetLibrary.Presets.Count)
                         presetToExport = Configuration.PresetLibrary.Presets[indexToExport];
                     else
-                        return Loc.Localize("Text Command Response: Export - Error 3", "An invalid library index ({0}) was provided.").Format(indexToExport);
+                        return Language.TextCommandResponseExportError3.Format(indexToExport);
                 }
 
                 var exportStr = includeTimestamp ? JsonConvert.SerializeObject(presetToExport) : WaymarkPresetExport.GetExportString(presetToExport);
                 ImGui.SetClipboardText(exportStr);
 
-                return Loc.Localize("Text Command Response: Export - Success 1", "Copied to clipboard.");
+                return Language.TextCommandResponseExportSuccess1;
             }
             else
             {
@@ -342,31 +345,26 @@ public class Plugin : IDalamudPlugin
                     if (indexToExport >= 1 && indexToExport <= MemoryHandler.MaxPresetSlotNum)
                         presetToExport = WaymarkPreset.Parse(MemoryHandler.ReadSlot((uint)indexToExport));
                     else
-                        return Loc.Localize("Text Command Response: Export - Error 4", "An invalid game slot number to export ({0}) was provided.").Format(indexToExport);
+                        return Language.TextCommandResponseExportError4.Format(indexToExport);
                 }
                 else
                 {
                     if (indexToExport >= 0 && indexToExport < Configuration.PresetLibrary.Presets.Count)
                         presetToExport = Configuration.PresetLibrary.Presets[indexToExport];
                     else
-                        return Loc.Localize("Text Command Response: Export - Error 5", "An invalid library index ({0}) was provided.").Format(indexToExport);
+                        return Language.TextCommandResponseExportError5.Format(indexToExport);
                 }
 
                 if (exportTargetIndex >= 1 && exportTargetIndex <= MemoryHandler.MaxPresetSlotNum)
-                {
-                    if (MemoryHandler.WriteSlot(exportTargetIndex, presetToExport.GetAsGamePreset()))
-                        return Loc.Localize("Text Command Response: Export - Success 2", "Preset exported to game slot {0}.").Format(exportTargetIndex);
+                    return MemoryHandler.WriteSlot(exportTargetIndex, presetToExport.GetAsGamePreset()) ? Language.TextCommandResponseExportSuccess2.Format(exportTargetIndex) : Language.TextCommandResponseExportError6.Format(exportTargetIndex);
 
-                    return Loc.Localize("Text Command Response: Export - Error 6", "Unable to write to game slot {0}!".Format(exportTargetIndex));
-                }
-
-                return Loc.Localize("Text Command Response: Export - Error 7", "An invalid game slot number ({0}) was provided as the target.").Format(exportTargetIndex);
+                return Language.TextCommandResponseExportError7.Format(exportTargetIndex);
             }
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error($"Unknown error occured while export the preset:\r\n{e}");
-            return Loc.Localize("Text Command Response: Export - Error 8", "An unknown error occured while trying to export the preset.");
+            Log.Error(ex, "Unknown error occured while export the preset");
+            return Language.TextCommandResponseExportError8;
         }
     }
 
@@ -381,18 +379,18 @@ public class Plugin : IDalamudPlugin
 
             ImGui.SetClipboardText(str);
 
-            return Loc.Localize("Text Command Response: Export All - Success 1", "Waymark library copied to clipboard.");
+            return Language.TextCommandResponseExportAllSuccess1;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error($"Unknown error occured while trying to copy presets to clipboard:\r\n{e}");
-            return Loc.Localize("Text Command Response: Export All - Error 1", "An unknown error occured while trying to copy presets to clipboard.");
+            Log.Error(ex, "Unknown error occured while trying to copy presets to clipboard");
+            return Language.TextCommandResponseExportAllError1;
         }
     }
 
     internal List<int> InternalCommand_GetPresetsForContentFinderCondition(ushort contentFinderCondition)
     {
-        List<int> foundPresets = new();
+        List<int> foundPresets = [];
         if (contentFinderCondition == 0)
             return foundPresets;
 
@@ -425,9 +423,9 @@ public class Plugin : IDalamudPlugin
             MemoryHandler.PlacePreset(Configuration.PresetLibrary.Presets[index].GetAsGamePreset());
             return true;
         }
-        catch (Exception e)
+        catch (Exception ex)
         {
-            Log.Error($"An unknown error occured while attempting to place preset {index}:\r\n{e}");
+            Log.Error(ex, $"An unknown error occured while attempting to place preset {index}");
             return false;
         }
     }
@@ -461,21 +459,21 @@ public class Plugin : IDalamudPlugin
         return Configuration.PresetLibrary.Presets[index].Name;
     }
 
-    protected void DrawUI()
+    private void DrawUi()
     {
-        PluginUI.Draw();
+        WindowSystem.Draw();
     }
 
-    protected void DrawConfigUI()
+    private void DrawConfigUi()
     {
-        PluginUI.SettingsWindow.WindowVisible = true;
+        ConfigWindow.Toggle();
     }
 
-    protected void OnTerritoryChanged(ushort ID)
+    private void OnTerritoryChanged(ushort territoryId)
     {
         var prevTerritoryTypeInfo = ZoneInfoHandler.GetZoneInfoFromTerritoryTypeID(CurrentTerritoryTypeID);
-        var newTerritoryTypeInfo = ZoneInfoHandler.GetZoneInfoFromTerritoryTypeID(ID);
-        CurrentTerritoryTypeID = ID;
+        var newTerritoryTypeInfo = ZoneInfoHandler.GetZoneInfoFromTerritoryTypeID(territoryId);
+        CurrentTerritoryTypeID = territoryId;
 
         //	Auto-save presets on leaving instance.
         if (Configuration.AutoSavePresetsOnInstanceLeave && ZoneInfoHandler.IsKnownContentFinderID(prevTerritoryTypeInfo.ContentFinderConditionID))
@@ -491,9 +489,9 @@ public class Plugin : IDalamudPlugin
                     preset.Name = $"{prevTerritoryTypeInfo.DutyName} - AutoImported";
                     Configuration.PresetLibrary.ImportPreset(preset);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Log.Error($"Error while attempting to auto-import game slot {i}:\r\n{e}");
+                    Log.Error(ex,$"Error while attempting to auto-import game slot {i}");
                 }
             }
 
@@ -510,20 +508,16 @@ public class Plugin : IDalamudPlugin
             for (var i = 0; i < MemoryHandler.MaxPresetSlotNum; ++i)
             {
                 FieldMarkerPreset gamePresetData = new();
-
                 if (i < presetsToAutoLoad.Count)
-                {
-                    var preset = presetsToAutoLoad[i];
-                    gamePresetData = preset.GetAsGamePreset();
-                }
+                    gamePresetData = presetsToAutoLoad[i].GetAsGamePreset();
 
                 try
                 {
                     MemoryHandler.WriteSlot(i + 1, gamePresetData);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-                    Log.Error($"Error while auto copying preset data to game slot {i}:\r\n{e}");
+                    Log.Error(ex, $"Error while auto copying preset data to game slot {i}");
                 }
             }
         }
