@@ -60,7 +60,7 @@ namespace WaymarkPresetPlugin.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to AboutTab.
+        ///   Looks up a localized string similar to About.
         /// </summary>
         internal static string About {
             get {
@@ -650,6 +650,15 @@ namespace WaymarkPresetPlugin.Resources {
         internal static string HeaderPresets {
             get {
                 return ResourceManager.GetString("HeaderPresets", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Help.
+        /// </summary>
+        internal static string Help {
+            get {
+                return ResourceManager.GetString("Help", resourceCulture);
             }
         }
         

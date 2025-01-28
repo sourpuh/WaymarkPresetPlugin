@@ -568,7 +568,7 @@ public class LibraryWindow : Window, IDisposable
                 ImGui.TextUnformatted("\uF0C1");
 
             ImGui.SameLine();
-            Helper.UrlLink("https://github.com/PunishedPineapple/WaymarkPresetPlugin/wiki/Preset-Resources", Language.MainWindowTextPresetResourcesLink, false, UiBuilder.IconFont);
+            Helper.UrlLink("https://github.com/Em-Six/FFXIVWaymarkPresets/wiki", Language.MainWindowTextPresetResourcesLink, false, UiBuilder.IconFont);
         }
         catch (Exception ex)
         {

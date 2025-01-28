@@ -57,6 +57,10 @@
 			<HintPath>$(DalamudLibPath)FFXIVClientStructs.dll</HintPath>
 		</Reference>
 	</ItemGroup>
+
+    <ItemGroup>
+        <Content Include="Resources\CoordinateSystemDiagrams.png" DestinationFolder="Resources\" CopyToOutputDirectory="Always" />
+    </ItemGroup>
     
 	<ItemGroup>
 	  <EmbeddedResource Update="Resources\Language.resx">

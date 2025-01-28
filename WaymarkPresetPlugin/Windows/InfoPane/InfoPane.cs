@@ -24,6 +24,8 @@ public class InfoPaneWindow : Window, IDisposable
         Plugin = plugin;
         Flags = ImGuiWindowFlags.NoResize;
         Size = new Vector2(100, 100);
+
+        IsOpen = true;
     }
 
     public void Dispose() { }

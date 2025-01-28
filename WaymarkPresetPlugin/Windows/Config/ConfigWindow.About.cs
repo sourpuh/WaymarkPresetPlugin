@@ -48,7 +48,7 @@ public partial class ConfigWindow
             using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.ParsedBlue))
             {
                 if (ImGui.Button(Language.DiscordThread))
-                    Dalamud.Utility.Util.OpenLink("https://discord.com/channels/581875019861328007/1258092745663316103");
+                    Dalamud.Utility.Util.OpenLink("https://discord.com/channels/581875019861328007/1032146772732170261");
             }
 
             ImGui.SameLine();
@@ -56,7 +56,7 @@ public partial class ConfigWindow
             using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DPSRed))
             {
                 if (ImGui.Button(Language.GithubIssues))
-                    Dalamud.Utility.Util.OpenLink("https://github.com/Infiziert90/Eventy/issues");
+                    Dalamud.Utility.Util.OpenLink("https://github.com/Infiziert90/WaymarkPresetPlugin/issues");
             }
 
             ImGui.SameLine();

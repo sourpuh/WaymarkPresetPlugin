@@ -33,6 +33,7 @@ public class EditorWindow : Window, IDisposable
         SizeCondition = ImGuiCond.Appearing;
 
         Flags = ImGuiWindowFlags.AlwaysAutoResize;
+        IsOpen = true;
     }
 
     public void Dispose() { }

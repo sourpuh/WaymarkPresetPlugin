@@ -51,6 +51,10 @@ public partial class ConfigWindow
 
     public void Help()
     {
+        using var tabItem = ImRaii.TabItem("Help");
+        if (!tabItem.Success)
+            return;
+
         var style = ImGui.GetStyle();
         var cachedCurrentHelpPage = CurrentHelpPage;
         for (var i = 0; i < Enum.GetValues<HelpWindowPage>().Length; ++i)

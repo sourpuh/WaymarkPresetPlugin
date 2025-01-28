@@ -485,7 +485,7 @@
         <value>Custom Sort Order</value>
     </data>
     <data name="About" xml:space="preserve">
-        <value>AboutTab</value>
+        <value>About</value>
     </data>
     <data name="Settings" xml:space="preserve">
         <value>Settings</value>
@@ -510,5 +510,8 @@
     </data>
     <data name="KoFi" xml:space="preserve">
         <value>Ko-Fi Tip</value>
+    </data>
+    <data name="Help" xml:space="preserve">
+        <value>Help</value>
     </data>
 </root>
