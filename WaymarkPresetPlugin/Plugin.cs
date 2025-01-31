@@ -54,7 +54,6 @@ public class Plugin : IDalamudPlugin
     public ConfigWindow ConfigWindow { get; init; }
     public EditorWindow EditorWindow { get; init; }
     public InfoPaneWindow InfoPaneWindow { get; init; }
-    public LayoutPassWindow LayoutPassWindow { get; init; }
     public LibraryWindow LibraryWindow { get; init; }
     public MapWindow MapWindow { get; init; }
 
@@ -75,13 +74,11 @@ public class Plugin : IDalamudPlugin
         ConfigWindow = new ConfigWindow(this);
         EditorWindow = new EditorWindow(this);
         InfoPaneWindow = new InfoPaneWindow(this);
-        LayoutPassWindow = new LayoutPassWindow(this);
         LibraryWindow = new LibraryWindow(this);
         MapWindow = new MapWindow(this);
         WindowSystem.AddWindow(ConfigWindow);
         WindowSystem.AddWindow(EditorWindow);
         WindowSystem.AddWindow(InfoPaneWindow);
-        WindowSystem.AddWindow(LayoutPassWindow);
         WindowSystem.AddWindow(LibraryWindow);
         WindowSystem.AddWindow(MapWindow);
 
@@ -127,7 +124,6 @@ public class Plugin : IDalamudPlugin
         ConfigWindow.Dispose();
         EditorWindow.Dispose();
         InfoPaneWindow.Dispose();
-        LayoutPassWindow.Dispose();
         LibraryWindow.Dispose();
         MapWindow.Dispose();
 

@@ -44,6 +44,8 @@ public class LibraryWindow : Window, IDisposable
     {
         Plugin = plugin;
 
+        PositionCondition = ImGuiCond.Always;
+
         SizeConstraints = new WindowSizeConstraints
         {
             MinimumSize = new Vector2(375, 375),
@@ -93,6 +95,10 @@ public class LibraryWindow : Window, IDisposable
 
         WindowSize = ImGui.GetWindowSize();
         WindowPosition = ImGui.GetWindowPos();
+
+        // Position change has applied, so we set it to null again
+        if (WindowPosition == Position)
+            Position = null;
 
         var style = ImGui.GetStyle();
 

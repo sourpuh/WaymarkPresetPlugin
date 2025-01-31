@@ -45,7 +45,6 @@ public class InfoPaneWindow : Window, IDisposable
         WindowSize = ImGui.GetWindowSize();
         WindowPosition = ImGui.GetWindowPos();
 
-        DrawInfoWindowLayoutPass();
         if (Plugin.LibraryWindow.SelectedPreset >= 0 && Plugin.LibraryWindow.SelectedPreset < Plugin.Configuration.PresetLibrary.Presets.Count)
         {
             if (ImGui.Button(Language.InfoPaneTextCopytoSlotLabel))
@@ -155,11 +154,6 @@ public class InfoPaneWindow : Window, IDisposable
         {
             ImGui.TextUnformatted(Language.InfoPaneTextNoPresetSelected);
         }
-    }
-
-    private void DrawInfoWindowLayoutPass()
-    {
-        Plugin.LayoutPassWindow.IsOpen = true;
     }
 
     private void CopyPresetToGameSlot(WaymarkPreset preset, int slot)
