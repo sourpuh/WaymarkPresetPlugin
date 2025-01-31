@@ -42,6 +42,7 @@ public class InfoPaneWindow : Window, IDisposable
 
     public override void Draw()
     {
+        var style = ImGui.GetStyle();
         WindowSize = ImGui.GetWindowSize();
         WindowPosition = ImGui.GetWindowPos();
 
@@ -51,7 +52,7 @@ public class InfoPaneWindow : Window, IDisposable
                 CopyPresetToGameSlot(Plugin.Configuration.PresetLibrary.Presets[Plugin.LibraryWindow.SelectedPreset], GameSlotDropdownSelection);
 
             ImGui.SameLine();
-            var comboWidth = ImGui.CalcTextSize($"{MemoryHandler.MaxPresetSlotNum}").X + ImGui.GetStyle().FramePadding.X * 3f + ImGui.GetTextLineHeightWithSpacing();
+            var comboWidth = ImGui.CalcTextSize($"{MemoryHandler.MaxPresetSlotNum}").X + style.FramePadding.X * 3f + ImGui.GetTextLineHeightWithSpacing();
             ImGui.SetNextItemWidth(comboWidth);
             using (var combo = ImRaii.Combo("###CopyToGameSlotNumberDropdown", $"{GameSlotDropdownSelection}"))
             {
@@ -65,13 +66,13 @@ public class InfoPaneWindow : Window, IDisposable
 
             var rightAlignPos = WindowSize.X;
             var placeButtonText = Language.ButtonPlace;
-            ImGui.SameLine(rightAlignPos - ImGui.CalcTextSize(placeButtonText).X - ImGui.GetStyle().WindowPadding.X - ImGui.GetStyle().FramePadding.X * 2);
+            ImGui.SameLine(rightAlignPos - ImGui.CalcTextSize(placeButtonText).X - style.WindowPadding.X - style.FramePadding.X * 2);
             if (ImGui.Button(placeButtonText))
                 MemoryHandler.PlacePreset(Plugin.Configuration.PresetLibrary.Presets[Plugin.LibraryWindow.SelectedPreset].GetAsGamePreset());
 
             ImGui.TextUnformatted(Language.InfoPaneTextPresetInfoLabel);
             var mapViewButtonText = Language.ButtonMapView;
-            ImGui.SameLine(rightAlignPos - ImGui.CalcTextSize(mapViewButtonText).X - ImGui.GetStyle().WindowPadding.X - ImGui.GetStyle().FramePadding.X * 2);
+            ImGui.SameLine(rightAlignPos - ImGui.CalcTextSize(mapViewButtonText).X - style.WindowPadding.X - style.FramePadding.X * 2);
             if (ImGui.Button(mapViewButtonText))
                 Plugin.MapWindow.Toggle();
 
@@ -125,7 +126,8 @@ public class InfoPaneWindow : Window, IDisposable
             if (ImGui.Button(Language.ButtonDelete) && !Plugin.EditorWindow.EditingPreset)
                 WantToDeleteSelectedPreset = true;
 
-            WindowSize.X = Math.Max(WindowSize.X, ImGui.GetItemRectMax().X - WindowPosition.X + ImGui.GetStyle().WindowPadding.X);
+            Plugin.Log.Information($"SIze: {WindowSize.X} vs {ImGui.GetItemRectMax().X - WindowPosition.X + style.WindowPadding.X}");
+            WindowSize.X = Math.Max(WindowSize.X, ImGui.GetItemRectMax().X - WindowPosition.X + style.WindowPadding.X);
             if (WantToDeleteSelectedPreset)
             {
                 ImGui.TextUnformatted(Language.InfoPaneTextConfirmDeleteLabel);
@@ -147,8 +149,10 @@ public class InfoPaneWindow : Window, IDisposable
                     WantToDeleteSelectedPreset = false;
             }
 
-            WindowSize.Y = ImGui.GetItemRectMax().Y - WindowPosition.Y + ImGui.GetStyle().WindowPadding.Y;
-            Size = WindowSize;
+            WindowSize.Y = ImGui.GetItemRectMax().Y - WindowPosition.Y + style.WindowPadding.Y;
+
+            // Size gets scaled with GlobalScale each frame, so we have to provide it a unscaled number to work
+            Size = WindowSize / ImGuiHelpers.GlobalScale;
         }
         else
         {
