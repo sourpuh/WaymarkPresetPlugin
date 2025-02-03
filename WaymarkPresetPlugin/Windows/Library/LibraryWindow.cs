@@ -227,6 +227,7 @@ public class LibraryWindow : Window, IDisposable
         if (presetDragDropResult == null)
             return;
 
+        Plugin.InfoPaneWindow.IsOpen = true;
         SelectedPreset = Plugin.Configuration.PresetLibrary.MovePreset(presetDragDropResult.Value.Item1, presetDragDropResult.Value.Item2, presetDragDropResult.Value.Item3);
         if (SelectedPreset == -1)
         {
@@ -256,9 +257,14 @@ public class LibraryWindow : Window, IDisposable
                 if (!Plugin.EditorWindow.EditingPreset)
                 {
                     if (Plugin.Configuration.AllowUnselectPreset && indices[i] == SelectedPreset && !ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                    {
                         SelectedPreset = -1;
+                    }
                     else
+                    {
                         SelectedPreset = indices[i];
+                        Plugin.InfoPaneWindow.IsOpen = true;
+                    }
 
                     Plugin.InfoPaneWindow.CancelPendingDelete();
                 }
@@ -359,9 +365,14 @@ public class LibraryWindow : Window, IDisposable
                     if (!Plugin.EditorWindow.EditingPreset)
                     {
                         if (Plugin.Configuration.AllowUnselectPreset && i == SelectedPreset && !ImGui.IsMouseDoubleClicked(ImGuiMouseButton.Left))
+                        {
                             SelectedPreset = -1;
+                        }
                         else
+                        {
                             SelectedPreset = i;
+                            Plugin.InfoPaneWindow.IsOpen = true;
+                        }
 
                         Plugin.InfoPaneWindow.CancelPendingDelete();
                     }
@@ -664,7 +675,10 @@ public class LibraryWindow : Window, IDisposable
     public void TrySetSelectedPreset(int presetIndex)
     {
         if (!Plugin.EditorWindow.EditingPreset)
+        {
             SelectedPreset = presetIndex;
+            Plugin.InfoPaneWindow.IsOpen = true;
+        }
     }
 
     public void TryDeselectPreset()

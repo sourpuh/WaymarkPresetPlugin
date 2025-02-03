@@ -43,6 +43,7 @@ public class EditorWindow : Window, IDisposable
         if (presetIndex < 0 || presetIndex >= Plugin.Configuration.PresetLibrary.Presets.Count)
             return;
 
+        IsOpen = true;
         EditingPresetIndex = presetIndex;
         ScratchEditingPreset = new ScratchPreset(Plugin.Configuration.PresetLibrary.Presets[EditingPresetIndex]);
     }
@@ -51,6 +52,12 @@ public class EditorWindow : Window, IDisposable
     {
         EditingPresetIndex = -1;
         ScratchEditingPreset = null;
+    }
+
+    public override void OnClose()
+    {
+        // Cancel the current editing if the window is closed, or we may end up in a deadlock
+        CancelEditing();
     }
 
     public override bool DrawConditions()
