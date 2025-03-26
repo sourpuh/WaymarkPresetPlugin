@@ -12,7 +12,7 @@ resharper_csharp_braces_for_foreach=not_required
 resharper_csharp_braces_for_for=not_required
 resharper_csharp_braces_for_while=not_required
 charset=utf-8
-end_of_line=crlf
+end_of_line=lf
 
 # Microsoft .NET properties
 csharp_new_line_before_members_in_object_initializers=false

@@ -126,7 +126,6 @@ public class InfoPaneWindow : Window, IDisposable
             if (ImGui.Button(Language.ButtonDelete) && !Plugin.EditorWindow.EditingPreset)
                 WantToDeleteSelectedPreset = true;
 
-            Plugin.Log.Information($"SIze: {WindowSize.X} vs {ImGui.GetItemRectMax().X - WindowPosition.X + style.WindowPadding.X}");
             WindowSize.X = Math.Max(WindowSize.X, ImGui.GetItemRectMax().X - WindowPosition.X + style.WindowPadding.X);
             if (WantToDeleteSelectedPreset)
             {
