@@ -31,9 +31,7 @@ public class InfoPaneWindow : Window, IDisposable
     public override void PreOpenCheck()
     {
         if (!Plugin.LibraryWindow.IsOpen || (Plugin.LibraryWindow.SelectedPreset < 0 && !Plugin.Configuration.AlwaysShowInfoPane))
-        {
             IsOpen = false;
-        }
     }
 
     public override void PreDraw()

@@ -90,9 +90,7 @@ public class LibraryWindow : Window, IDisposable
     public override void OnOpen()
     {
         if (Plugin.Configuration.AlwaysShowInfoPane || SelectedPreset > 0)
-        {
             Plugin.InfoPaneWindow.IsOpen = true;
-        }
     }
 
     public override void Draw()
