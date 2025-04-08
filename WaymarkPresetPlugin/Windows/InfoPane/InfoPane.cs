@@ -22,17 +22,18 @@ public class InfoPaneWindow : Window, IDisposable
     public InfoPaneWindow(Plugin plugin) : base("Preset Info###PresetInfo")
     {
         Plugin = plugin;
-        Flags = ImGuiWindowFlags.NoResize;
+        Flags = ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoFocusOnAppearing;
         Size = new Vector2(100, 100);
-
-        IsOpen = true;
     }
 
     public void Dispose() { }
 
-    public override bool DrawConditions()
+    public override void PreOpenCheck()
     {
-        return Plugin.LibraryWindow.IsOpen && (Plugin.LibraryWindow.SelectedPreset >= 0 || Plugin.Configuration.AlwaysShowInfoPane);
+        if (!Plugin.LibraryWindow.IsOpen || (Plugin.LibraryWindow.SelectedPreset < 0 && !Plugin.Configuration.AlwaysShowInfoPane))
+        {
+            IsOpen = false;
+        }
     }
 
     public override void PreDraw()
