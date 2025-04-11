@@ -33,7 +33,6 @@ public class EditorWindow : Window, IDisposable
         SizeCondition = ImGuiCond.Appearing;
 
         Flags = ImGuiWindowFlags.AlwaysAutoResize;
-        IsOpen = true;
     }
 
     public void Dispose() { }
@@ -44,12 +43,15 @@ public class EditorWindow : Window, IDisposable
             return;
 
         IsOpen = true;
+
         EditingPresetIndex = presetIndex;
         ScratchEditingPreset = new ScratchPreset(Plugin.Configuration.PresetLibrary.Presets[EditingPresetIndex]);
     }
 
     public void CancelEditing()
     {
+        IsOpen = false;
+
         EditingPresetIndex = -1;
         ScratchEditingPreset = null;
     }
@@ -182,9 +184,9 @@ public class EditorWindow : Window, IDisposable
             if (ImGui.Button(Language.ButtonSave))
             {
                 Plugin.Configuration.PresetLibrary.Presets[EditingPresetIndex] = ScratchEditingPreset.GetPreset();
-                EditingPresetIndex = -1;
-                ScratchEditingPreset = null;
                 Plugin.Configuration.Save();
+
+                CancelEditing();
             }
 
             ImGui.SameLine();
