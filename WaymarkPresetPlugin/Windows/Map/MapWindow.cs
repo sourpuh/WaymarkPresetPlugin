@@ -10,7 +10,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using WaymarkPresetPlugin.Data;
 using WaymarkPresetPlugin.Resources;
@@ -163,7 +163,7 @@ public class MapWindow : Window, IDisposable
                         {
                             Vector2 mapLowerBounds = new(Math.Min(1.0f, Math.Max(0.0f, mapPan.X - mapZoom * 0.5f)), Math.Min(1.0f, Math.Max(0.0f, mapPan.Y - mapZoom * 0.5f)));
                             Vector2 mapUpperBounds = new(Math.Min(1.0f, Math.Max(0.0f, mapPan.X + mapZoom * 0.5f)), Math.Min(1.0f, Math.Max(0.0f, mapPan.Y + mapZoom * 0.5f)));
-                            ImGui.ImageButton(mapList[selectedSubMapIndex].ImGuiHandle, new Vector2(mapWidgetSizePx), mapLowerBounds, mapUpperBounds, 0, new Vector4(0, 0, 0, 1), new Vector4(1, 1, 1, 1));
+                            ImGui.ImageButton(mapList[selectedSubMapIndex].Handle, new Vector2(mapWidgetSizePx), mapLowerBounds, mapUpperBounds, 0, new Vector4(0, 0, 0, 1), new Vector4(1, 1, 1, 1));
 
                             var mapWidgetScreenPos = ImGui.GetItemRectMin();
                             if (ImGui.IsItemHovered() && CapturedWaymarkIndex < 0)
@@ -241,7 +241,7 @@ public class MapWindow : Window, IDisposable
                                         new Vector2(mapWidgetSizePx),
                                         mapWidgetScreenPos);
 
-                                    ImGui.GetWindowDrawList().AddImage(Plugin.WaymarkIconTextures[i].ImGuiHandle, waymarkMapPt - WaymarkMapIconHalfSizePx, waymarkMapPt + WaymarkMapIconHalfSizePx);
+                                    ImGui.GetWindowDrawList().AddImage(Plugin.WaymarkIconTextures[i].Handle, waymarkMapPt - WaymarkMapIconHalfSizePx, waymarkMapPt + WaymarkMapIconHalfSizePx);
 
                                     //	Capture the waymark if appropriate.
                                     if (showingEditingView &&
@@ -349,7 +349,7 @@ public class MapWindow : Window, IDisposable
 
                         var texData = parchmentTexFile != null ? MapTextureBlend(texFile.GetRgbaImageData(), parchmentTexFile.GetRgbaImageData()) : texFile.GetRgbaImageData();
                         var tex = Plugin.Texture.CreateFromRaw(RawImageSpecification.Rgba32(texFile.Header.Width, texFile.Header.Height), texData);
-                        if (tex.ImGuiHandle == IntPtr.Zero)
+                        if (tex.Handle.IsNull)
                             continue;
 
                         try

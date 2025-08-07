@@ -1,8 +1,8 @@
-﻿<Project Sdk="Dalamud.NET.Sdk/12.0.2">
+﻿<Project Sdk="Dalamud.NET.Sdk/13.0.0">
 	<PropertyGroup>
 		<TargetFramework>net9.0-windows</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
-		<Version>1.5.4.3</Version>
+		<Version>1.5.5.0</Version>
 		<Authors>Infi, PunishedPineapple</Authors>
 		<Product />
 		<Copyright>Copyright @ Infi, PunishedPineapple 2020-2025</Copyright>

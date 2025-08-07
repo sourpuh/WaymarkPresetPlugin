@@ -10,7 +10,7 @@ using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using FFXIVClientStructs.FFXIV.Client.UI.Misc;
 using FFXIVClientStructs.FFXIV.Component.GUI;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using Newtonsoft.Json;
 using WaymarkPresetPlugin.Resources;
 using WaymarkPresetPlugin.Windows.Map;
@@ -68,12 +68,12 @@ public class LibraryWindow : Window, IDisposable
         FieldMarkerAddonVisible = false;
         unsafe
         {
-            var pFieldMarkerAddon = (AtkUnitBase*) Plugin.GameGui.GetAddonByName("FieldMarker");
-            if (pFieldMarkerAddon != null && pFieldMarkerAddon->IsVisible && pFieldMarkerAddon->RootNode != null)
+            var pFieldMarkerAddon = Plugin.GameGui.GetAddonByName("FieldMarker");
+            if (!pFieldMarkerAddon.IsNull && pFieldMarkerAddon.IsVisible && ((AtkUnitBase*)pFieldMarkerAddon.Address)->RootNode != null)
             {
                 FieldMarkerAddonVisible = true;
-                DockedPosition.X = pFieldMarkerAddon->X + pFieldMarkerAddon->RootNode->Width * pFieldMarkerAddon->Scale;
-                DockedPosition.Y = pFieldMarkerAddon->Y;
+                DockedPosition.X = pFieldMarkerAddon.X + ((AtkUnitBase*)pFieldMarkerAddon.Address)->RootNode->Width * pFieldMarkerAddon.Scale;
+                DockedPosition.Y = pFieldMarkerAddon.Y;
             }
         }
 
@@ -136,7 +136,7 @@ public class LibraryWindow : Window, IDisposable
         if (Plugin.Configuration.ShowLibraryZoneFilterBox && !Plugin.Configuration.FilterOnCurrentZone && Plugin.Configuration.SortPresetsByZone)
         {
             using var pushedWidth = ImRaii.ItemWidth(ImGui.CalcTextSize("_").X * 20u);
-            ImGui.InputText(Language.LibraryWindowTextZoneSearchLabel, ref SearchText, 16u);
+            ImGui.InputText(Language.LibraryWindowTextZoneSearchLabel, ref SearchText, 16);
 
             zoneFilterString = SearchText;
         }
@@ -288,7 +288,7 @@ public class LibraryWindow : Window, IDisposable
                 using var source = ImRaii.DragDropSource(ImGuiDragDropFlags.SourceNoHoldToOpenOthers);
                 if (source.Success)
                 {
-                    ImGui.SetDragDropPayload($"PresetIdxZ{zonePresets.Key}", nint.Zero, 0);
+                    ImGui.SetDragDropPayload($"PresetIdxZ{zonePresets.Key}", default, 0);
                     LibraryPresetDragAndDrop = indices[i];
 
                     ImGui.TextUnformatted($"{Language.DragandDropPreviewMovingPreset} {Plugin.Configuration.PresetLibrary.Presets[indices[i]].Name}{(Plugin.Configuration.ShowLibraryIndexInPresetInfo ? $" ({indices[i]})" : "")}");
@@ -302,7 +302,7 @@ public class LibraryWindow : Window, IDisposable
                     continue;
 
                 var payload = ImGui.AcceptDragDropPayload($"PresetIdxZ{zonePresets.Key}", ImGuiDragDropFlags.AcceptBeforeDelivery | ImGuiDragDropFlags.AcceptNoDrawDefaultRect);
-                if (payload.NativePtr != null && LibraryPresetDragAndDrop.HasValue)
+                if (payload.Handle != null && LibraryPresetDragAndDrop.HasValue)
                 {
                     if (payload.IsDelivery())
                     {
@@ -322,7 +322,7 @@ public class LibraryWindow : Window, IDisposable
 
         if (!Plugin.EditorWindow.EditingPreset && Plugin.Configuration.AllowPresetDragAndDropOrdering)
         {
-            if (ImGui.GetDragDropPayload().NativePtr != null && LibraryPresetDragAndDrop is >= 0 && LibraryPresetDragAndDrop < Plugin.Configuration.PresetLibrary.Presets.Count && Plugin.Configuration.PresetLibrary.Presets[LibraryPresetDragAndDrop.Value].MapID == zonePresets.Key)
+            if (ImGui.GetDragDropPayload().Handle != null && LibraryPresetDragAndDrop is >= 0 && LibraryPresetDragAndDrop < Plugin.Configuration.PresetLibrary.Presets.Count && Plugin.Configuration.PresetLibrary.Presets[LibraryPresetDragAndDrop.Value].MapID == zonePresets.Key)
             {
                 ImGui.Selectable(Language.DragandDropPreviewMovetoBottom);
 
@@ -330,7 +330,7 @@ public class LibraryWindow : Window, IDisposable
                 if (target.Success)
                 {
                     var payload = ImGui.AcceptDragDropPayload($"PresetIdxZ{zonePresets.Key}", ImGuiDragDropFlags.AcceptBeforeDelivery | ImGuiDragDropFlags.AcceptNoDrawDefaultRect);
-                    if (payload.NativePtr != null && LibraryPresetDragAndDrop.HasValue)
+                    if (payload.Handle != null && LibraryPresetDragAndDrop.HasValue)
                     {
                         if (payload.IsDelivery())
                         {
@@ -396,7 +396,7 @@ public class LibraryWindow : Window, IDisposable
                     using var source = ImRaii.DragDropSource(ImGuiDragDropFlags.SourceNoHoldToOpenOthers);
                     if (source.Success)
                     {
-                        ImGui.SetDragDropPayload("PresetIdxAnyZone", nint.Zero, 0);
+                        ImGui.SetDragDropPayload("PresetIdxAnyZone", default, 0);
                         LibraryPresetDragAndDrop = i;
 
                         ImGui.TextUnformatted($"{Language.DragandDropPreviewMovingPreset} {Plugin.Configuration.PresetLibrary.Presets[i].Name}{(Plugin.Configuration.ShowLibraryIndexInPresetInfo ? $" ({i})" : "")}");
@@ -409,7 +409,7 @@ public class LibraryWindow : Window, IDisposable
                     if (target.Success)
                     {
                         var payload = ImGui.AcceptDragDropPayload("PresetIdxAnyZone", ImGuiDragDropFlags.AcceptBeforeDelivery | ImGuiDragDropFlags.AcceptNoDrawDefaultRect);
-                        if (payload.NativePtr != null && LibraryPresetDragAndDrop.HasValue)
+                        if (payload.Handle != null && LibraryPresetDragAndDrop.HasValue)
                         {
                             if (payload.IsDelivery())
                             {
@@ -431,14 +431,14 @@ public class LibraryWindow : Window, IDisposable
 
         if (!Plugin.EditorWindow.EditingPreset && Plugin.Configuration.AllowPresetDragAndDropOrdering)
         {
-            if (ImGui.GetDragDropPayload().NativePtr != null && LibraryPresetDragAndDrop is >= 0 && LibraryPresetDragAndDrop < Plugin.Configuration.PresetLibrary.Presets.Count)
+            if (ImGui.GetDragDropPayload().Handle != null && LibraryPresetDragAndDrop is >= 0 && LibraryPresetDragAndDrop < Plugin.Configuration.PresetLibrary.Presets.Count)
             {
                 ImGui.Selectable(Language.DragandDropPreviewMovetoBottom);
                 using var target = ImRaii.DragDropTarget();
                 if (target.Success)
                 {
                     var payload = ImGui.AcceptDragDropPayload("PresetIdxAnyZone", ImGuiDragDropFlags.AcceptBeforeDelivery | ImGuiDragDropFlags.AcceptNoDrawDefaultRect);
-                    if (payload.NativePtr != null && LibraryPresetDragAndDrop.HasValue)
+                    if (payload.Handle != null && LibraryPresetDragAndDrop.HasValue)
                     {
                         if (payload.IsDelivery())
                         {
@@ -472,7 +472,7 @@ public class LibraryWindow : Window, IDisposable
             using var source = ImRaii.DragDropSource(ImGuiDragDropFlags.None);
             if (source.Success)
             {
-                ImGui.SetDragDropPayload("PresetZoneHeader", nint.Zero, 0);
+                ImGui.SetDragDropPayload("PresetZoneHeader", default, 0);
                 LibraryZoneDragAndDrop = zoneInfo.ContentFinderConditionID;
 
                 ImGui.TextUnformatted($"{Language.DragandDropPreviewMovingZone} {zoneInfo.DutyName}");
@@ -485,7 +485,7 @@ public class LibraryWindow : Window, IDisposable
             if (target.Success)
             {
                 var payload = ImGui.AcceptDragDropPayload("PresetZoneHeader", ImGuiDragDropFlags.AcceptBeforeDelivery | ImGuiDragDropFlags.AcceptNoDrawDefaultRect);
-                if (payload.NativePtr != null && LibraryZoneDragAndDrop.HasValue)
+                if (payload.Handle != null && LibraryZoneDragAndDrop.HasValue)
                 {
                     if (payload.IsDelivery())
                     {
@@ -517,14 +517,14 @@ public class LibraryWindow : Window, IDisposable
         ushort zoneIndexToMoveTo = 0;
         if (!Plugin.EditorWindow.EditingPreset && Plugin.Configuration.AllowZoneDragAndDropOrdering)
         {
-            if (ImGui.GetDragDropPayload().NativePtr != null && LibraryZoneDragAndDrop is >= 0)
+            if (ImGui.GetDragDropPayload().Handle != null && LibraryZoneDragAndDrop is >= 0)
             {
                 ImGui.CollapsingHeader(isTop ? Language.DragandDropPreviewMovetoTop : Language.DragandDropPreviewMovetoBottom);
                 using var target = ImRaii.DragDropTarget();
                 if (target.Success)
                 {
                     var payload = ImGui.AcceptDragDropPayload("PresetZoneHeader", ImGuiDragDropFlags.AcceptBeforeDelivery | ImGuiDragDropFlags.AcceptNoDrawDefaultRect);
-                    if (payload.NativePtr != null && LibraryZoneDragAndDrop.HasValue)
+                    if (payload.Handle != null && LibraryZoneDragAndDrop.HasValue)
                     {
                         if (payload.IsDelivery())
                         {

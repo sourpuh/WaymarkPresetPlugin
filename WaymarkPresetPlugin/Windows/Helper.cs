@@ -1,7 +1,7 @@
 using System.Numerics;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
-using static ImGuiNET.ImGuiWindowFlags;
+using Dalamud.Bindings.ImGui;
+using static Dalamud.Bindings.ImGui.ImGuiWindowFlags;
 
 namespace WaymarkPresetPlugin.Windows;
 

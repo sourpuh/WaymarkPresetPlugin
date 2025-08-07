@@ -5,7 +5,7 @@ using System.Numerics;
 using Dalamud.Interface.Textures.TextureWraps;
 using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using WaymarkPresetPlugin.Resources;
 
 namespace WaymarkPresetPlugin.Windows.Config;
@@ -146,7 +146,7 @@ public partial class ConfigWindow
             {
                 var size = new Vector2(CoordinateSystemsDiagram.Width, CoordinateSystemsDiagram.Height);
                 size *= ImGui.GetContentRegionAvail().X / CoordinateSystemsDiagram.Width * imgWidthScale;
-                ImGui.Image(CoordinateSystemsDiagram.ImGuiHandle, size);
+                ImGui.Image(CoordinateSystemsDiagram.Handle, size);
             }
         }
     }
@@ -178,7 +178,7 @@ public partial class ConfigWindow
                 using var source = ImRaii.DragDropSource(ImGuiDragDropFlags.None);
                 if (source.Success)
                 {
-                    ImGui.SetDragDropPayload("EditPresetCoords", nint.Zero, 0);
+                    ImGui.SetDragDropPayload("EditPresetCoords", default, 0);
                     Plugin.EditorWindow.WaymarkCoordDragAndDrop = points[i];
 
                     ImGui.TextUnformatted(Language.DragandDropPreviewCircleComputerWaymark);

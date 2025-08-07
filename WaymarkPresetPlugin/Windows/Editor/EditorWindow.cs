@@ -5,7 +5,7 @@ using Dalamud.Interface.Utility;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using Dalamud.Utility;
-using ImGuiNET;
+using Dalamud.Bindings.ImGui;
 using WaymarkPresetPlugin.Data;
 using WaymarkPresetPlugin.Resources;
 
@@ -107,7 +107,7 @@ public class EditorWindow : Window, IDisposable
                             {
                                 if (source.Success)
                                 {
-                                    ImGui.SetDragDropPayload("EditPresetWaymark", nint.Zero, 0);
+                                    ImGui.SetDragDropPayload("EditPresetWaymark", default, 0);
                                     WaymarkIdDragAndDrop = waymark.ID;
 
                                     ImGui.TextUnformatted(Language.DragandDropPreviewEditSwapWaymark.Format(waymark.Label));
@@ -119,14 +119,14 @@ public class EditorWindow : Window, IDisposable
                                 if (target.Success)
                                 {
                                     var payload = ImGui.AcceptDragDropPayload("EditPresetWaymark", ImGuiDragDropFlags.None);
-                                    if (payload.NativePtr != null && WaymarkIdDragAndDrop.HasValue)
+                                    if (payload.Handle != null && WaymarkIdDragAndDrop.HasValue)
                                     {
                                         ScratchEditingPreset.SwapWaymarks(waymark.ID, WaymarkIdDragAndDrop.Value);
                                         WaymarkIdDragAndDrop = null;
                                     }
 
                                     payload = ImGui.AcceptDragDropPayload("EditPresetCoords", ImGuiDragDropFlags.None);
-                                    if (payload.NativePtr != null && WaymarkCoordDragAndDrop.HasValue)
+                                    if (payload.Handle != null && WaymarkCoordDragAndDrop.HasValue)
                                     {
                                         ScratchEditingPreset.SetWaymark(waymark.ID, true, WaymarkCoordDragAndDrop.Value);
                                         WaymarkCoordDragAndDrop = null;
@@ -157,7 +157,7 @@ public class EditorWindow : Window, IDisposable
                 {
                     ImGui.TextUnformatted(Language.EditWindowTextZoneSearchLabel);
                     ImGui.SameLine();
-                    ImGui.InputText("##ZoneComboFilter", ref EditWindowZoneFilterString, 16u);
+                    ImGui.InputText("##ZoneComboFilter", ref EditWindowZoneFilterString, 16);
                     if (!EditWindowZoneComboWasOpen)
                     {
                         ImGui.SetKeyboardFocusHere();
