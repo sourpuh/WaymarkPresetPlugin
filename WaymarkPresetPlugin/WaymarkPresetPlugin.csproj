@@ -2,10 +2,10 @@
 	<PropertyGroup>
 		<TargetFramework>net9.0-windows</TargetFramework>
 		<Platforms>AnyCPU</Platforms>
-		<Version>1.5.5.0</Version>
-		<Authors>Infi, PunishedPineapple</Authors>
+		<Version>1.5.5.1</Version>
+		<Authors>Infi, PunishedPineapple, sourpuh</Authors>
 		<Product />
-		<Copyright>Copyright @ Infi, PunishedPineapple 2020-2025</Copyright>
+		<Copyright>Copyright @ Infi, PunishedPineapple, sourpuh 2020-2025</Copyright>
 		<RepositoryUrl>https://github.com/Infiziert90/WaymarkPresetPlugin</RepositoryUrl>
 	</PropertyGroup>
 
