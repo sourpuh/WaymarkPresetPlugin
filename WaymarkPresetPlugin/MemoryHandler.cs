@@ -36,7 +36,7 @@ public static class MemoryHandler
 	private static bool IsSafeToDirectPlacePreset()
 	{
 		var currentContentLinkType = (byte) EventFramework.GetCurrentContentType();
-		return Plugin.ClientState.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 4;
+		return Plugin.ObjectTable.LocalPlayer != null && !Plugin.Condition[ConditionFlag.InCombat] && currentContentLinkType is > 0 and < 4;
 	}
 
 	public static void PlacePreset(FieldMarkerPreset preset)

@@ -28,6 +28,7 @@ public class Plugin : IDalamudPlugin
     [PluginService] public static ITextureProvider Texture { get; private set; } = null!;
     [PluginService] public static ICommandManager Commands { get; private set; } = null!;
     [PluginService] public static IClientState ClientState { get; private set; } = null!;
+    [PluginService] public static IObjectTable ObjectTable { get; private set; } = null!;
     [PluginService] public static IChatGui ChatGui { get; private set; } = null!;
     [PluginService] public static IGameGui GameGui { get; private set; } = null!;
     [PluginService] public static IPluginLog Log { get; private set; } = null!;
