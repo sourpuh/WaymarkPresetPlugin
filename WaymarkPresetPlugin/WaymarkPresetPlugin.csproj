@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Dalamud.NET.Sdk/14.0.1">
 	<PropertyGroup>
-		<Version>1.5.5.2</Version>
+		<Version>1.5.5.3</Version>
 		<Authors>Infi, PunishedPineapple, sourpuh</Authors>
 		<Product />
 		<Copyright>Copyright @ Infi, PunishedPineapple, sourpuh 2020-2025</Copyright>
