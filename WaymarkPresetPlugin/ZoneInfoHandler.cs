@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
@@ -10,16 +10,6 @@ public static class ZoneInfoHandler
     private static readonly Dictionary<uint, ushort> TerritoryTypeIDToContentFinderIDDict = new();
     private static readonly Dictionary<string, List<MapInfo>> MapInfoDict = new();
 
-    //	This is to hard-code that some zones should be included, even if they don't otherwise meet the criteria.  There are a small handful of
-    //	ContentFinderCondition IDs that support waymark presets, but are content link type #3, and don't otherwise distinguish themselves in the
-    //	sheets in any way that I have found.  There is a separate function that gets called at runtime that determines whether presets are allowed
-    //	based on some flag about the current duty, but it doesn't seem to have something in the sheets that corresponds to it perfectly.
-    private static readonly List<ushort> BodgeIncludeContentFinderConditionIDs =
-    [
-        760, // Delubrum Reginae
-        761  // Delubrum Reginae (Savage)
-    ];
-
     public static void Init()
     {
         //	Clean out anything that we had before.
@@ -30,19 +20,16 @@ public static class ZoneInfoHandler
         ZoneInfoDict[0] = ZoneInfo.Unknown;
         TerritoryTypeIDToContentFinderIDDict[0] = 0;
 
-        //	Get the name for every "MapID" that is an instance zone.  This is spread out over a few different sheets.  The ID number that gets used in the actual preset is the column 10 in
-        //	TerritoryType.  The zone name is correlated in PlaceName, and the duty name and ContentLink IDs are in ContentFinderCondition.  We are using the Content link because that's what's
-        //	returned by the best (working) function that I have been able to find so far for the current instance zone.  Confusingly, as scope has changed a bit, we want to store the actual
-        //	ID of the maps for these zones too.  The best solution (for the time being) seems to be to store a pseudo map name string (the base of the map names for that zone) that can be cross-referenced later.
+        // Initialize ZoneInfo and map TerritoryTypeID -> ContentFinderID for all territories that support presets.
         foreach (var zone in Sheets.TerritorySheet)
         {
-            if (ZoneInfoDict.ContainsKey((ushort) zone.ContentFinderCondition.RowId) || (zone.ExclusiveType != 2 && !BodgeIncludeContentFinderConditionIDs.Contains((ushort)zone.ContentFinderCondition.RowId)))
+            if (ZoneInfoDict.ContainsKey((ushort) zone.ContentFinderCondition.RowId))
+                continue;
+
+            if (!zone.TerritoryIntendedUse.Value.EnableFieldMarkerPresets)
                 continue;
 
             if (!Sheets.ContentFinderSheet.TryGetRow(zone.ContentFinderCondition.RowId, out var contentRow))
-                continue;
-
-            if (contentRow.ContentLinkType is <= 0 or >= 3 && !BodgeIncludeContentFinderConditionIDs.Contains((ushort) zone.ContentFinderCondition.RowId))
                 continue;
 
             if (!ZoneInfoDict.ContainsKey((ushort) zone.ContentFinderCondition.RowId))
@@ -51,7 +38,7 @@ public static class ZoneInfoHandler
                 if (dutyName.Length > 0)
                     dutyName = dutyName.First().ToString().ToUpper() + dutyName[1..];
 
-                ZoneInfoDict.Add((ushort) zone.ContentFinderCondition.RowId, new ZoneInfo(dutyName, Utils.ToStr(zone.PlaceName.Value!.Name), zone.RowId, zone.Map.Value!.Id.ExtractText().Split('/')[0], (ushort) zone.ContentFinderCondition.RowId, contentRow.Content.RowId));
+                ZoneInfoDict.Add((ushort)zone.ContentFinderCondition.RowId, new ZoneInfo(dutyName, Utils.ToStr(zone.PlaceName.Value!.Name), zone.RowId, zone.Map.Value!.Id.ExtractText().Split('/')[0], (ushort)zone.ContentFinderCondition.RowId));
             }
 
             TerritoryTypeIDToContentFinderIDDict.TryAdd(zone.RowId, (ushort) zone.ContentFinderCondition.RowId);
@@ -111,19 +98,17 @@ public struct ZoneInfo
     public uint TerritoryTypeID { get; set; }
     public string MapBaseName { get; set; }
     public ushort ContentFinderConditionID { get; set; }
-    public uint ContentLinkID { get; set; }
 
-    public ZoneInfo(string dutyName, string zoneName, uint territoryTypeID, string mapBaseName, ushort contentFinderConditionID, uint contentLinkID)
+    public ZoneInfo(string dutyName, string zoneName, uint territoryTypeID, string mapBaseName, ushort contentFinderConditionID)
     {
         DutyName = dutyName;
         ZoneName = zoneName;
         TerritoryTypeID = territoryTypeID;
         MapBaseName = mapBaseName;
         ContentFinderConditionID = contentFinderConditionID;
-        ContentLinkID = contentLinkID;
     }
 
-    public static readonly ZoneInfo Unknown = new("Unknown Duty", "Unknown Zone", 0, "default", 0, 0);
+    public static readonly ZoneInfo Unknown = new("Unknown Duty", "Unknown Zone", 0, "default", 0);
 }
 
 public struct MapInfo
