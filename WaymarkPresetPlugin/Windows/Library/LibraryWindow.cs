@@ -111,22 +111,18 @@ public class LibraryWindow : Window, IDisposable
         if (ImGui.Checkbox(Language.ConfigOptionFilteronCurrentZone, ref Plugin.Configuration.mFilterOnCurrentZone))
             Plugin.Configuration.Save();
 
-        var saveCurrentWaymarksButtonText = Language.ButtonSaveCurrentWaymarks;
-        ImGui.SameLine(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(saveCurrentWaymarksButtonText).X - ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().WindowPadding.X);
-        if (ImGui.Button(saveCurrentWaymarksButtonText))
+        var presetsUnsupported = !ZoneInfoHandler.GetTerritorySupportsPresets(Plugin.ClientState.TerritoryType);
+        using (ImRaii.Disabled(presetsUnsupported))
         {
-            FieldMarkerPreset currentWaymarks = new();
-            if (MemoryHandler.GetCurrentWaymarksAsPresetData(ref currentWaymarks))
-                if (Plugin.Configuration.PresetLibrary.ImportPreset(currentWaymarks) >= 0)
-                    Plugin.Configuration.Save();
-        }
-        else
-        {
-            using var _ = ImRaii.PushColor(ImGuiCol.Button, style.Colors[(int)ImGuiCol.Button] * 0.5f)
-                                .Push(ImGuiCol.ButtonHovered, style.Colors[(int)ImGuiCol.Button])
-                                .Push(ImGuiCol.ButtonActive, style.Colors[(int)ImGuiCol.Button])
-                                .Push(ImGuiCol.Text, style.Colors[(int)ImGuiCol.TextDisabled]);
-            ImGui.Button(saveCurrentWaymarksButtonText);
+            var saveCurrentWaymarksButtonText = Language.ButtonSaveCurrentWaymarks;
+            ImGui.SameLine(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(saveCurrentWaymarksButtonText).X - ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().WindowPadding.X);
+            if (ImGui.Button(saveCurrentWaymarksButtonText))
+            {
+                FieldMarkerPreset currentWaymarks = new();
+                if (MemoryHandler.GetCurrentWaymarksAsPresetData(ref currentWaymarks))
+                    if (Plugin.Configuration.PresetLibrary.ImportPreset(currentWaymarks) >= 0)
+                        Plugin.Configuration.Save();
+            }
         }
 
         // The string to use for filtering the list of zones

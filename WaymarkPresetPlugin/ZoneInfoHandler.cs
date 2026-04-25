@@ -89,6 +89,11 @@ public static class ZoneInfoHandler
         var mapBaseName = GetZoneInfoFromTerritoryTypeID(id).MapBaseName;
         return MapInfoDict.TryGetValue(mapBaseName, out var value) ? value.ToArray() : [];
     }
+
+    public static bool GetTerritorySupportsPresets(uint territoryTypeID)
+    {
+        return TerritoryTypeIDToContentFinderIDDict.ContainsKey(territoryTypeID);
+    }
 }
 
 public struct ZoneInfo
