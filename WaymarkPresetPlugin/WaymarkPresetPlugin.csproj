@@ -4,7 +4,7 @@
 		<Authors>Infi, PunishedPineapple, sourpuh</Authors>
 		<Product />
 		<Copyright>Copyright @ Infi, PunishedPineapple, sourpuh 2020-2025</Copyright>
-		<RepositoryUrl>https://github.com/Infiziert90/WaymarkPresetPlugin</RepositoryUrl>
+		<RepositoryUrl>https://github.com/sourpuh/WaymarkPresetPlugin</RepositoryUrl>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)'=='Debug'">

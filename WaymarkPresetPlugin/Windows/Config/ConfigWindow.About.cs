@@ -29,10 +29,6 @@ public partial class ConfigWindow
                 ImGui.SameLine();
                 ImGui.TextColored(ImGuiColors.ParsedGold, Plugin.PluginInterface.Manifest.Author);
 
-                ImGui.TextUnformatted(Language.Discord);
-                ImGui.SameLine();
-                ImGui.TextColored(ImGuiColors.ParsedGold, "@infi");
-
                 ImGui.TextUnformatted(Language.Version);
                 ImGui.SameLine();
                 ImGui.TextColored(ImGuiColors.ParsedOrange, Plugin.PluginInterface.Manifest.AssemblyVersion.ToString());
@@ -56,7 +52,7 @@ public partial class ConfigWindow
             using (ImRaii.PushColor(ImGuiCol.Button, ImGuiColors.DPSRed))
             {
                 if (ImGui.Button(Language.GithubIssues))
-                    Dalamud.Utility.Util.OpenLink("https://github.com/Infiziert90/WaymarkPresetPlugin/issues");
+                    Dalamud.Utility.Util.OpenLink("https://github.com/sourpuh/WaymarkPresetPlugin/issues");
             }
 
             ImGui.SameLine();
