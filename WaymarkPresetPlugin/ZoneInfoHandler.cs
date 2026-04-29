@@ -92,7 +92,7 @@ public static class ZoneInfoHandler
 
     public static bool GetTerritorySupportsPresets(uint territoryTypeID)
     {
-        return TerritoryTypeIDToContentFinderIDDict.ContainsKey(territoryTypeID);
+        return territoryTypeID > 0 && TerritoryTypeIDToContentFinderIDDict.ContainsKey(territoryTypeID);
     }
 }
 

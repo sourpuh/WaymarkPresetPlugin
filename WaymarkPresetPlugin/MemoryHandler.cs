@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Linq;
 using Dalamud.Game.ClientState.Conditions;
@@ -63,7 +63,21 @@ public static class MemoryHandler
         MarkingController.Instance()->PlacePreset(&placementStruct);
     }
 
-	public static unsafe bool GetCurrentWaymarksAsPresetData(ref FieldMarkerPreset rPresetData)
+    public static unsafe bool AreAnyWaymarksActive()
+    {
+        var markerSpan = MarkingController.Instance()->FieldMarkers;
+        foreach (var index in Enumerable.Range(0, 8))
+        {
+            var marker = markerSpan[index];
+            if (marker.Active)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static unsafe bool GetCurrentWaymarksAsPresetData(ref FieldMarkerPreset rPresetData)
 	{
 		var currentContentLinkType = (byte) EventFramework.GetCurrentContentType();
 		if(currentContentLinkType is >= 0 and < 4)	//	Same as the game check, but let it do overworld maps too.

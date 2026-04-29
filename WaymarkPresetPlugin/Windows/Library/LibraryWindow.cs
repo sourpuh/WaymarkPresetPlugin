@@ -112,7 +112,7 @@ public class LibraryWindow : Window, IDisposable
             Plugin.Configuration.Save();
 
         var presetsUnsupported = !ZoneInfoHandler.GetTerritorySupportsPresets(Plugin.ClientState.TerritoryType);
-        using (ImRaii.Disabled(presetsUnsupported))
+        using (ImRaii.Disabled(presetsUnsupported || !MemoryHandler.AreAnyWaymarksActive()))
         {
             var saveCurrentWaymarksButtonText = Language.ButtonSaveCurrentWaymarks;
             ImGui.SameLine(ImGui.GetContentRegionAvail().X - ImGui.CalcTextSize(saveCurrentWaymarksButtonText).X - ImGui.GetStyle().FramePadding.X * 2 + ImGui.GetStyle().WindowPadding.X);
