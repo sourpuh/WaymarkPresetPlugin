@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -48,7 +48,7 @@ public class Plugin : IDalamudPlugin
     internal static string SubCommandArgExportIncludeTime => "-t";
     internal static string SubCommandArgExportIsGameSlot => "-g";
 
-    public ushort CurrentTerritoryTypeID { get; protected set; }
+    public uint CurrentTerritoryTypeID { get; protected set; }
     public Configuration Configuration;
 
     public readonly WindowSystem WindowSystem = new("WaymarkPresetPlugin");
@@ -466,7 +466,7 @@ public class Plugin : IDalamudPlugin
         ConfigWindow.Toggle();
     }
 
-    private void OnTerritoryChanged(ushort territoryId)
+    private void OnTerritoryChanged(uint territoryId)
     {
         var prevTerritoryTypeInfo = ZoneInfoHandler.GetZoneInfoFromTerritoryTypeID(CurrentTerritoryTypeID);
         var newTerritoryTypeInfo = ZoneInfoHandler.GetZoneInfoFromTerritoryTypeID(territoryId);
